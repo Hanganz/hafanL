@@ -3,6 +3,35 @@
 <meta name="theme-color" content="#1a73c8"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kasir Laundry</title>
+ <script src="https://jsdelivr.net"></script>
+<script>
+  // Link & Kunci Asli Supabase Anda (Sudah Diperbaiki)
+  const SUPABASE_URL = "https://jvdsghkfahsbmrwzdgec.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_IMzZdxSR_Sy8u8ykVv5Ypw_HwqsaJkA";
+  
+  // Mengaktifkan koneksi ke database Anda
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Fungsi Akurat untuk Lacak Nota Pelanggan (Contoh Nota: 1221)
+  async function lacakStatusLaundry(kodeNota) {
+    const { data, error } = await supabase
+      .from('pesanan')
+      .select('*')
+      .eq('kode_lacak', kodeNota); // Mencari baris nota 1221 yang pas
+
+    if (error) {
+      console.error("Gagal memuat:", error);
+      return "Error koneksi";
+    }
+
+    if (data && data.length > 0) {
+      // Mengambil baris pertama yang ditemukan secara akurat
+      return data[0].status; 
+    } else {
+      return "Nota tidak ditemukan";
+    }
+  }
+</script>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f1ec;--card:#fff;--tx:#1f1d1a;--mut:#6d675d;--pri:#1a73c8;--bd:#e2ded5;--ok:#1e9e5a;--warn:#d99a00;--bad:#d64545}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161e;--card:#1a222d;--tx:#e8edf3;--mut:#8f9bab;--pri:#5aa9f0;--bd:#2a3442}}
@@ -99,36 +128,6 @@ body:has(.nv) #app{padding-bottom:120px}
 .chp{display:inline-block;padding:8px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;cursor:pointer;margin:0 6px 6px 0}.chp.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 .bd2{display:inline-flex;gap:8px;align-items:center;font-size:13px;padding:6px 12px;border-radius:20px;background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad);margin:4px 0 8px}.bd2.on{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}.bd2 i{width:8px;height:8px;border-radius:50%;background:currentColor}
 details{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin:8px 0}summary{cursor:pointer;font-weight:600}details p{margin:8px 0 0;color:var(--mut)}
-<!-- TEPAT DI ATAS TAG </head> ATAU DI AWAL TAG <script> -->
-<script src="https://jsdelivr.net"></script>
-<script>
-  // Link & Kunci Asli Supabase Anda (Sudah Diperbaiki)
-  const SUPABASE_URL = "https://jvdsghkfahsbmrwzdgec.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_IMzZdxSR_Sy8u8ykVv5Ypw_HwqsaJkA";
-  
-  // Mengaktifkan koneksi ke database Anda
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // Fungsi Akurat untuk Lacak Nota Pelanggan (Contoh Nota: 1221)
-  async function lacakStatusLaundry(kodeNota) {
-    const { data, error } = await supabase
-      .from('pesanan')
-      .select('*')
-      .eq('kode_lacak', kodeNota); // Mencari baris nota 1221 yang pas
-
-    if (error) {
-      console.error("Gagal memuat:", error);
-      return "Error koneksi";
-    }
-
-    if (data && data.length > 0) {
-      // Mengambil baris pertama yang ditemukan secara akurat
-      return data[0].status; 
-    } else {
-      return "Nota tidak ditemukan";
-    }
-  }
-</script>
 
 #toast{bottom:calc(100px + env(safe-area-inset-bottom,0px))}
 .sl{position:relative;display:block}.cap{position:absolute;left:0;right:0;bottom:0;padding:22px 14px 10px;color:#fff;font-weight:700;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.65))}
