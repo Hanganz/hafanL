@@ -99,6 +99,36 @@ body:has(.nv) #app{padding-bottom:120px}
 .chp{display:inline-block;padding:8px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;cursor:pointer;margin:0 6px 6px 0}.chp.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 .bd2{display:inline-flex;gap:8px;align-items:center;font-size:13px;padding:6px 12px;border-radius:20px;background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad);margin:4px 0 8px}.bd2.on{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}.bd2 i{width:8px;height:8px;border-radius:50%;background:currentColor}
 details{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin:8px 0}summary{cursor:pointer;font-weight:600}details p{margin:8px 0 0;color:var(--mut)}
+<!-- TEPAT DI ATAS TAG </head> ATAU DI AWAL TAG <script> -->
+<script src="https://jsdelivr.net"></script>
+<script>
+  // Link & Kunci Asli Supabase Anda (Sudah Diperbaiki)
+  const SUPABASE_URL = "https://jvdsghkfahsbmrwzdgec.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_IMzZdxSR_Sy8u8ykVv5Ypw_HwqsaJkA";
+  
+  // Mengaktifkan koneksi ke database Anda
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Fungsi Akurat untuk Lacak Nota Pelanggan (Contoh Nota: 1221)
+  async function lacakStatusLaundry(kodeNota) {
+    const { data, error } = await supabase
+      .from('pesanan')
+      .select('*')
+      .eq('kode_lacak', kodeNota); // Mencari baris nota 1221 yang pas
+
+    if (error) {
+      console.error("Gagal memuat:", error);
+      return "Error koneksi";
+    }
+
+    if (data && data.length > 0) {
+      // Mengambil baris pertama yang ditemukan secara akurat
+      return data[0].status; 
+    } else {
+      return "Nota tidak ditemukan";
+    }
+  }
+</script>
 
 #toast{bottom:calc(100px + env(safe-area-inset-bottom,0px))}
 .sl{position:relative;display:block}.cap{position:absolute;left:0;right:0;bottom:0;padding:22px 14px 10px;color:#fff;font-weight:700;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.65))}
