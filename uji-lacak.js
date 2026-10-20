@@ -1,0 +1,24 @@
+const fs = require('fs'), path = require('path'), { DatabaseSync } = require('node:sqlite');
+const { lacakKode, lacakNota } = require('./lacak-core');
+let sch = fs.readFileSync(path.join(__dirname, '..', 'schema.sql'), 'utf8').replace(/--.*$/gm, '').replace(/SET NAMES[^;]*;/g, '').replace(/\) ENGINE=[^;]*;/g, ');').replace(/\s+UNSIGNED/g, '').replace(/\s+AUTO_INCREMENT/g, '').replace(/ENUM\([^)]*\)/g, 'TEXT').replace(/DATETIME\(3\)/g, 'TEXT').replace(/CURRENT_TIMESTAMP\(3\)/g, 'CURRENT_TIMESTAMP').replace(/TINYINT\(1\)/g, 'INTEGER').replace(/MEDIUMTEXT/g, 'TEXT').replace(/UNIQUE KEY \w+ \(/g, 'UNIQUE (').replace(/^\s*KEY \w+ \([^)]*\),?\s*$/gm, '');
+sch = sch.replace(/^\s*id (?:INT|BIGINT) NOT NULL,/gm, '  id INTEGER PRIMARY KEY,').replace(/^\s*PRIMARY KEY \(id\),?\s*$/gm, '').replace(/,(\s*\n\s*\))/g, '$1');
+const raw = new DatabaseSync(':memory:'); raw.exec('PRAGMA foreign_keys=ON;'); raw.exec(sch);
+const db = { all: async (s, p = []) => raw.prepare(s).all(...p) };
+let gagal = 0; const cek = (n, ok, i) => { console.log((ok ? '  ok  ' : 'GAGAL ') + n + (i ? ' -> ' + i : '')); if (!ok) gagal++; };
+(async () => {
+  raw.exec("INSERT INTO pelanggan (kode,nama,no_wa,alamat,catatan_internal) VALUES ('CUST0001','Budi','6281234567890','Jl. Rahasia 1','jangan layani'),('CUST0002','Tamu',NULL,NULL,NULL)");
+  raw.exec("INSERT INTO pesanan (no_nota,kode_lacak,pelanggan_id,status,total) VALUES ('ORD-20261013-0001','ABC234',1,'diproses',20000),('ORD-20261013-0002','XYZ789',2,'diterima',5000)");
+  raw.exec("INSERT INTO layanan (kode,nama,harga,satuan,durasi_jam,aktif,urutan) VALUES ('reg','Kiloan',5000,'kg',24,1,0)");
+  raw.exec("INSERT INTO pesanan_item (pesanan_id,layanan_id,nama_layanan,satuan,jumlah,harga_satuan,subtotal,catatan) VALUES (1,1,'Kiloan','kg',4,5000,20000,'jangan campur putih')");
+  raw.exec("INSERT INTO status_pesanan_log (pesanan_id,status,waktu) VALUES (1,'diterima','2026-10-13 01:00:00'),(1,'diproses','2026-10-13 02:00:00')");
+  raw.exec("INSERT INTO pembayaran (pesanan_id,metode,jumlah,dibayar_pada) VALUES (1,'tunai',5000,'2026-10-13 01:00:00')");
+  let r = await lacakKode(db, 'abc-234');
+  cek('lacak lewat kode (huruf kecil dan tanda hubung diabaikan)', r && r.no_nota === 'ORD-20261013-0001' && r.item.length === 1 && r.riwayat.length === 2, r && r.status);
+  cek('sisa tagihan ikut tampil', r.sisa_tagihan === 15000, String(r.sisa_tagihan));
+  const s = JSON.stringify(r); cek('tidak membocorkan WA, alamat, catatan internal, ID pelanggan', !/6281234567890|Rahasia|jangan layani|pelanggan_id/.test(s));
+  cek('kode salah / terlalu pendek -> tidak ada', !(await lacakKode(db, 'NOPE99')) && !(await lacakKode(db, 'A')) && !(await lacakKode(db, "' OR 1=1 --")));
+  r = await lacakNota(db, 'ord-20261013-0001', '7890'); cek('lacak lewat nota + 4 digit WA', r && r.nama === 'Budi');
+  cek('4 digit salah / nota palsu ditolak', !(await lacakNota(db, 'ORD-20261013-0001', '0000')) && !(await lacakNota(db, "ORD-1' OR '1'='1", '7890')));
+  cek('pelanggan tanpa WA tidak bisa dilacak lewat nota (harus pakai kode)', !(await lacakNota(db, 'ORD-20261013-0002', '0000')) && (await lacakKode(db, 'XYZ789')).nama === 'Tamu');
+  console.log(gagal ? '\n' + gagal + ' pengujian GAGAL' : '\nSemua pengujian LULUS'); process.exit(gagal ? 1 : 0);
+})();
