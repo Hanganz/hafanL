@@ -1,6 +1,6 @@
 /* Konfigurasi Supabase dibaca dari config.js (isi URL dan anon key di sana). */
-const SB_URL = String((window.KL_CONFIG || {}).SB_URL || 'ISI_SUPABASE_URL_DI_SINI');
-const SB_KEY = String((window.KL_CONFIG || {}).SB_KEY || 'ISI_SUPABASE_ANON_KEY_DI_SINI');
+const SB_URL = String((window.KL_CONFIG || {}).SB_URL || 'https://neposhpkamrfvbwvbjcv.supabase.co');
+const SB_KEY = String((window.KL_CONFIG || {}).SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lcG9zaHBrYW1yZnZid3ZiamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MjMwMjgsImV4cCI6MjEwODQ5OTAyOH0.wCu3nEHaBR5X0fLmcrAuyYyVoF08GIcO1y2lT9zViWA');
 
 const sbOk = () => /^https:\/\//.test(SB_URL) && SB_KEY.length > 20 && !/ISI_/.test(SB_URL + SB_KEY);
 let SB_ROLE = 'tamu';   // 'staf' = sudah login akun staf dan data penuh termuat; 'tamu' = pelanggan
