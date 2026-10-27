@@ -6,7 +6,6 @@ const sbOk = () => /^https:\/\//.test(SB_URL) && SB_KEY.length > 20 && !/ISI_/.t
 let SB_ROLE = 'tamu';   // 'staf' = sudah login akun staf dan data penuh termuat; 'tamu' = pelanggan
 let SB_PERAN = '', SB_NAMA = '', SB_EM = '', SB_VER = 0, SB_PH = '';
 const S=JSON.parse(document.getElementById('data').textContent);
-const PIN='1234';
 const DEF=[{k:'reg',n:'Kiloan Reguler',h:7000,u:'kg',j:48,on:1},{k:'exp',n:'Kiloan Express',h:10000,u:'kg',j:6,on:1},{k:'sel',n:'Selimut',h:25000,u:'pcs',j:72,on:1},{k:'bed',n:'Bedcover',h:35000,u:'pcs',j:72,on:1},{k:'spt',n:'Sepatu',h:30000,u:'pasang',j:72,on:1},{k:'krp',n:'Karpet Besar',h:15000,u:'m2',j:96,on:1}];
 if(!S.svc)S.svc=DEF;
 const SV={};S.svc.forEach(s=>SV[s.k]=s);S.prd=S.prd||[];S.prd.forEach(p=>{SV[p.k]=p});
@@ -78,7 +77,7 @@ async function sbBoot(){
   if(sbSesiGet()){
     try{
       const r=await sbRpc('kl_muat',{},true);
-      if(r&&r.data&&Array.isArray(r.data.orders))replaceS(r.data);
+      if(r&&r.data&&Array.isArray(r.data.orders)){replaceS(r.data);_base=deltaSnap()}
       SB_VER=+r.versi||0;SB_PH=r.ph||'';SB_PERAN=r.peran||'';SB_NAMA=r.nama||'';SB_EM=(sbSesiGet()||{}).em||'';SB_ROLE='staf';return
     }catch(e){
       if(e.status===401||e.status===403){sbSesiSet(null);toast('Akun ini tidak punya akses staf')}
@@ -118,24 +117,42 @@ function sbProyeksi(){
   const c=Object.keys(ctx).map(k=>ctx[k]),js=JSON.stringify([lac,c,akun]);
   return {lac,c,akun,ph:h32(js)+'.'+h32(js.length+js.slice(-400))+'.'+js.length}}
 
+let _base=null,_noDelta=false;
+function deltaSnap(){const t={},o=new Map();Object.keys(S).forEach(k=>{if(k==='orders'||k.charAt(0)==='_')return;t[k]=JSON.stringify(S[k])});(S.orders||[]).forEach(x=>o.set(String(x.id),JSON.stringify(x)));return {t,o}}
 async function save(){
   if(_sv){S.stamp=Date.now();try{localStorage.setItem('kl_bk',JSON.stringify({stamp:S.stamp,t:S.stamp,from:_infl,ver:SB_VER,data:S}))}catch(e){}_q=true;tampilSimpan(true,'Menyimpan… perubahan berikutnya menunggu');return}
   if(SB_ROLE!=='staf'){toast('Masuk sebagai admin/karyawan dulu untuk menyimpan data');return}
-  {const keep=(k,v)=>{if(!sg(k)&&v!=null&&v!=='')ss(k,v)};keep('tab',tab==='baru'?'pend':tab);keep('ds',ds);if(tab==='det')keep('det',detId);keep('sy',Math.round(window.scrollY||0))}
   kKey('0');
   _sv=true;_t0=Date.now();ss('t0',_t0);S.stamp=_t0;_infl=_t0;_q=false;try{localStorage.setItem('kl_bk',JSON.stringify({stamp:_t0,t:_t0,ver:SB_VER,data:S}))}catch(e){}tampilSimpan(true);
   setTimeout(()=>{if(_sv)tampilSimpan(true,'Masih menyimpan… jangan tutup halaman')},8000);
   setTimeout(()=>{if(_sv){tampilSimpan(false);toast('Penyimpanan lambat. Periksa koneksi, lalu cek apakah data sudah tersimpan.')}},30000);
-  const snap=JSON.stringify(S),px=sbProyeksi(),kirim=px.ph!==SB_PH;
+  const px=sbProyeksi(),kirim=px.ph!==SB_PH,nb=deltaSnap();
+  const fullBody=()=>'{"p_data":'+JSON.stringify(S)+',"p_basis":'+SB_VER+',"p_ph":'+JSON.stringify(px.ph)+',"p_lacak":'+(kirim?JSON.stringify(px.lac):'null')+',"p_ctx":'+(kirim?JSON.stringify(px.c):'null')+',"p_akun":'+(kirim?JSON.stringify(px.akun):'null')+'}';
+  let fn='kl_simpan',body=null;
+  if(_base&&!_noDelta&&SB_VER>0&&!Object.keys(_base.t).some(k=>!(k in nb.t))){
+    const set={},up=[],hp=[];
+    Object.keys(nb.t).forEach(k=>{if(_base.t[k]!==nb.t[k])set[k]=S[k]});
+    S.orders.forEach(x=>{const id=String(x.id);if(_base.o.get(id)!==nb.o.get(id))up.push(x)});
+    _base.o.forEach((v,id)=>{if(!nb.o.has(id))hp.push(id)});
+    fn='kl_simpan_delta';
+    body=JSON.stringify({p_basis:SB_VER,p_set:set,p_orders:up,p_hapus:hp,p_ph:px.ph,p_lacak:kirim?px.lac:null,p_ctx:kirim?px.c:null,p_akun:kirim?px.akun:null});
+  }
   try{draw()}catch(e){}
   try{
     const t=await sbToken();if(!t){const e=new Error('SESI_HABIS');throw e}
-    const body='{"p_data":'+snap+',"p_basis":'+SB_VER+',"p_ph":'+JSON.stringify(px.ph)+',"p_lacak":'+(kirim?JSON.stringify(px.lac):'null')+',"p_ctx":'+(kirim?JSON.stringify(px.c):'null')+',"p_akun":'+(kirim?JSON.stringify(px.akun):'null')+'}';
-    const r=await fetch(SB_URL+'/rest/v1/rpc/kl_simpan',{method:'POST',headers:Object.assign({apikey:SB_KEY,'Content-Type':'application/json',Authorization:'Bearer '+t}),body});
+    const post=(f,b)=>fetch(SB_URL+'/rest/v1/rpc/'+f,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Authorization:'Bearer '+t},body:b});
+    let r=await post(fn,body||fullBody());
+    if(!r.ok&&fn==='kl_simpan_delta'&&r.status===404){_noDelta=true;fn='kl_simpan';r=await post(fn,fullBody())}
     if(!r.ok){let j=null;try{j=await r.json()}catch(e){}const e=new Error((j&&(j.message||j.hint))||('HTTP '+r.status));e.status=r.status;throw e}
     if(!_q){try{localStorage.removeItem('kl_bk')}catch(e){}}
-    /* berhasil: muat ulang halaman seperti perilaku lama (tab/scroll dipulihkan lewat sessionStorage) */
-    location.reload();
+    /* berhasil: tidak perlu muat ulang. Versi dan hash lacak dicatat di memori, layar digambar ulang di tempat */
+    let nv=null;try{const j=await r.json();nv=(j&&typeof j==='object')?(j.versi!=null?j.versi:j.ver):j}catch(_){}
+    SB_VER=(nv!=null&&isFinite(+nv)&&+nv>SB_VER)?+nv:SB_VER+1;SB_PH=px.ph;_base=nb;dirty=false;
+    ss('t0',null);tampilSimpan(false);
+    toast('Tersimpan dalam '+((Date.now()-_t0)/1000).toFixed(1)+' detik');
+    try{draw()}catch(_){}
+    if(_q){_q=false;setTimeout(save,100)}
+    return
   }catch(e){tampilSimpan(false);const m=String(e.message||e);
     if(/KONFLIK/.test(m)){_q=false;konflikAsk();return}
     if(/DITOLAK_PERAN/.test(m)){_q=false;toast('Peran Anda tidak boleh melakukan perubahan ini. Muat ulang halaman untuk mengambil data terbaru.');return}
@@ -167,14 +184,22 @@ async function cekPin(){
     if(r&&r.token){try{localStorage.setItem('kl_at',r.token)}catch(e){}sbPasang(r.data);scr='cust';cscr='akun';draw();return}
   }catch(e){toast(/TERLALU_BANYAK/.test(e.message)?'Terlalu banyak percobaan. Coba lagi 15 menit lagi.':'Gagal terhubung. Coba lagi.');return}
   toast('No. HP/WA atau kata sandi salah')}
+function lcErr(e){const m=String((e&&e.message)||e),st=e&&e.status;
+  if(/TERLALU_BANYAK/.test(m))return 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.';
+  if(m==='WAKTU_HABIS')return 'Server lama merespons.';
+  if(m==='JARINGAN'||st===0)return 'Tidak bisa menjangkau server (JARINGAN). Periksa internet atau alamat Supabase di config.js.';
+  if(st===401||st===403)return 'Akses ditolak server ('+st+'): '+m+'. Admin: periksa kunci anon dan izin fungsi kl_lacak_kode.';
+  if(st===404)return 'Fungsi pelacakan belum ada di server (404). Admin: jalankan supabase_keamanan.sql.';
+  return 'Gagal ('+(st||'?')+'): '+m}
+async function rpcUlang(fn,args){try{return await sbRpc(fn,args)}catch(e){if(e&&e.status===0){await new Promise(r=>setTimeout(r,1500));return await sbRpc(fn,args)}throw e}}
 async function cari(){
   lcPre='';lcMsg='';if(SB_ROLE==='staf')return cariStaf();
   const k=($('#ck').value||'').trim().toUpperCase().replace(/\s+/g,''),w=dig($('#cw')?$('#cw').value:'');let o=null;
   if(lm==='k'?k.length!==6:!(k&&w.length===4)){found='x';draw();return}
   toast('Mencari…');
-  try{const r=lm==='k'?await sbRpc('kl_lacak_kode',{p_kode:k}):await sbRpc('kl_lacak_nota',{p_nota:k,p_wa4:w});
+  try{const r=lm==='k'?await rpcUlang('kl_lacak_kode',{p_kode:k}):await rpcUlang('kl_lacak_nota',{p_nota:k,p_wa4:w});
     if(r&&r.o){o=sbInject(r.o,r.ctx,r.lim);try{localStorage.setItem('lc2',JSON.stringify(lm==='k'?{m:'k',k}:{m:'n',n:k,w}));localStorage.setItem('lc',o.id+':'+(lm==='k'?'k:'+k:'w:'+w))}catch(e){}}
-  }catch(e){toast(/TERLALU_BANYAK/.test(e.message)?'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.':'Gagal terhubung. Coba lagi.');return}
+  }catch(e){toast(lcErr(e));return}
   found=o||'x';draw()}
 function logoutAcc(){try{localStorage.removeItem('acc');const t=localStorage.getItem('kl_at');localStorage.removeItem('kl_at');if(t&&SB_ROLE!=='staf')sbRpc('kl_akun_keluar',{p_token:t}).catch(()=>{})}catch(e){}if(SB_ROLE!=='staf')sbBersih();cscr='home';draw()}
 function sisa(o){return o.bayar==='Lunas'?'Lunas':o.bayar==='DP'?'Sisa '+rp(o.total-o.dp):'Belum bayar'}
@@ -410,7 +435,10 @@ async function regGo(){const n=$('#rn').value.trim(),w=nw($('#rw').value),p1=$('
 function me(){return sg('kar')||''}
 function owner(){return !sg('kar')}
 async function cekPinStaf(){const v=$('#pn').value,no=$('#pno').value,nd=dig(no),ad=dig(S.admNo||''),k=(S.kar||[]).find(x=>x.on!==0&&x.pin&&x.pin===v&&dig(x.hp||'')===nd);
-  if(SB_PERAN==='owner'&&v===(S.pin||PIN)&&(!ad||nd===ad)){adm=true;ss('adm','1');ss('kar',null);draw();return}
+  if(SB_PERAN==='owner'&&!S.pin&&(!ad||nd===ad)){
+    if(!/^\d{4,8}$/.test(v)||v==='1234'||v==='0000'||/^(\d)\1+$/.test(v)){toast('PIN admin belum dibuat. Isi PIN baru 4-8 angka (bukan 1234/0000/angka kembar) di kolom ini, lalu Masuk.');return}
+    S.pin=v;adm=true;ss('adm','1');ss('kar',null);draw();save();return}
+  if(SB_PERAN==='owner'&&S.pin&&v===S.pin&&(!ad||nd===ad)){adm=true;ss('adm','1');ss('kar',null);draw();return}
   if(k&&SB_PERAN==='owner'){adm=true;ss('adm','1');ss('kar',k.n);draw();return}
   const a=(S.acc||[]).find(x=>x.w===nw(no));
   if(a&&v&&await vfPw(a,v)){try{localStorage.setItem('acc',a.w)}catch(e){}scr='cust';cscr='akun';draw();return}
@@ -567,7 +595,7 @@ function bacaSv(){dirty=true;S.svc.forEach((s,i)=>{const n=$('#vn'+i);if(!n)retu
 function tog(i){bacaSv();S.svc[i].on=S.svc[i].on?0:1;draw()}
 function tambahSv(){bacaSv();const s={k:'s'+Date.now(),n:'Layanan baru',h:0,u:'kg',j:48,on:1};S.svc.push(s);SV[s.k]=s;draw()}
 function atur(){ask('Simpan semua perubahan pengaturan? Perubahan langsung tampil ke pelanggan.',()=>atur2(),'Simpan')}
-function atur2(){const np=$('#sx').value.trim();if(np&&!/^\d{4,8}$/.test(np)){toast('PIN harus 4-8 angka');return}if(np)S.pin=np;bacaSv();const pins=(S.kar||[]).map(k=>k.pin);if(pins.some(x=>!/^\d{4,8}$/.test(x))||new Set(pins).size!==pins.length||pins.includes(S.pin||PIN)){toast('PIN karyawan harus 4-8 angka, tidak kembar, dan beda dari PIN admin');return}save()}
+function atur2(){const np=$('#sx').value.trim();if(np&&!/^\d{4,8}$/.test(np)){toast('PIN harus 4-8 angka');return}if(np)S.pin=np;bacaSv();const pins=(S.kar||[]).map(k=>k.pin);if(pins.some(x=>!/^\d{4,8}$/.test(x))||new Set(pins).size!==pins.length||(S.pin&&pins.includes(S.pin))){toast('PIN karyawan harus 4-8 angka, tidak kembar, dan beda dari PIN admin');return}save()}
 async function cadang(){
   const q=v=>{let s=String(v==null?'':v);if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
   const h=['Nota','Nama','WA','Layanan','Jumlah','Satuan','Diskon','Total','Pembayaran','DP','Status','Masuk','Estimasi','Catatan','Metode'];
@@ -958,7 +986,7 @@ async function xlsSave(fn,sheets){
   await dlf(fn+'.csv','\ufeff'+toCsv(sheets[0][1]));if(sheets.length>1)toast('Excel belum termuat, yang diunduh hanya data aktif (CSV)')}
 function xlsDl(k){xlsSave('data-laundry-'+DS[k][0].toLowerCase(),[[DS[k][0],DS[k][1]()]])}
 function xlsAll(){xlsSave('data-laundry-lengkap',Object.entries(DS).map(([k,v])=>[v[0],v[1]()]))}
-function xlsTpl(){xlsSave('template-karyawan',[['Karyawan',[{Nama:'Budi','No HP':'08123456789',PIN:'1234',Jabatan:'Kasir',Status:'Aktif'}]]])}
+function xlsTpl(){xlsSave('template-karyawan',[['Karyawan',[{Nama:'Budi','No HP':'08123456789',PIN:'',Jabatan:'Kasir',Status:'Aktif'}]]])}
 function csvRows(x){const rows=[];let cur=[],f='',q=false;x=x.replace(/^\ufeff/,'');
   for(let i=0;i<x.length;i++){const c=x[i];if(q){if(c==='"'){if(x[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===','||c===';'){cur.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&x[i+1]==='\n')i++;cur.push(f);f='';if(cur.some(v=>v!==''))rows.push(cur);cur=[]}else f+=c}
   cur.push(f);if(cur.some(v=>v!==''))rows.push(cur);const h=(rows.shift()||[]).map(v=>v.trim());return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]||''])))}
@@ -1026,10 +1054,10 @@ async function lacakDariUrl(){
   if(SB_ROLE==='staf'){const o=S.orders.find(x=>tkc(x)===k);found=o||'x';lcMsg='';if(o)try{localStorage.setItem('lc',o.id+':k:'+k)}catch(e){}draw();return true}
   try{draw()}catch(e){}
   try{
-    const r=await sbRpc('kl_lacak_kode',{p_kode:k});
+    const r=await rpcUlang('kl_lacak_kode',{p_kode:k});
     if(r&&r.o){const o=sbInject(r.o,r.ctx,r.lim);found=o;lcMsg='';try{localStorage.setItem('lc2',JSON.stringify({m:'k',k}));localStorage.setItem('lc',o.id+':k:'+k)}catch(e){}}
     else{found='x';lcMsg=''}
-  }catch(e){found=null;lcMsg=/TERLALU_BANYAK/.test(e.message)?'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.':'Belum bisa terhubung ke server ('+(e.message==='WAKTU_HABIS'?'waktu habis':'periksa koneksi')+'). Kode Anda tetap tersimpan di kolom, tekan Lacak Sekarang untuk mencoba lagi.'}
+  }catch(e){found=null;lcMsg=lcErr(e)+' Kode Anda tetap tersimpan di kolom, tekan Lacak Sekarang untuk mencoba lagi.'}
   try{draw()}catch(e){}return true}
 window.addEventListener('hashchange',()=>{lacakDariUrl()});
 function ukur(){return Math.round(JSON.stringify(S).length/1024)}
@@ -1180,7 +1208,7 @@ function splash(){if(adm)return;const d=document.createElement('div');d.id='spl'
 {const a=document.getElementById('app');if(a&&sbOk())a.innerHTML='<p style="text-align:center;margin:40vh 16px 0;opacity:.6">Memuat data…</p>'}
 await sbBoot();
 if(SB_ROLE!=='staf'){adm=false;ss('adm',null);ss('kar',null)}
-if(sg('goPin')){ss('goPin',null);if(SB_ROLE==='staf'&&SB_PERAN==='owner')scr='pin'}
+if(sg('goPin')){ss('goPin',null);if(SB_ROLE==='staf'&&SB_PERAN==='owner'){adm=true;ss('adm','1');ss('kar',null)}}
 if(SB_ROLE==='staf'&&SB_PERAN!=='owner'){adm=true;ss('adm','1');ss('kar',SB_NAMA||SB_EM||'Kasir')}
 if(S.warna)document.documentElement.style.setProperty('--pri',S.warna);
 backfill();applyTh();
