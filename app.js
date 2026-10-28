@@ -34,8 +34,11 @@ function tampilSimpan(on,msg){let e=document.getElementById('svg');if(!on){if(e)
    Tamu  : fungsi publik terbatas (info toko, lacak kode, akun sendiri)
    ===================================================================== */
 const SB_SESI='kl_sb';
-function sbSesiGet(){try{return JSON.parse(localStorage.getItem(SB_SESI)||'null')}catch(e){return null}}
-function sbSesiSet(s){try{s?localStorage.setItem(SB_SESI,JSON.stringify(s)):localStorage.removeItem(SB_SESI)}catch(e){}}
+let _sesiMem=null;
+function _stSesi(){try{return (window.KL_CONFIG||{}).INGAT_LOGIN?localStorage:sessionStorage}catch(e){return null}}
+function sbSesiGet(){if(_sesiMem)return _sesiMem;try{const st=_stSesi(),x=st?JSON.parse(st.getItem(SB_SESI)||'null'):null;if(x)_sesiMem=x;return x}catch(e){return null}}
+function sbSesiSet(s){_sesiMem=s||null;try{const st=_stSesi();if(st)s?st.setItem(SB_SESI,JSON.stringify(s)):st.removeItem(SB_SESI)}catch(e){}}
+try{if(!(window.KL_CONFIG||{}).INGAT_LOGIN)localStorage.removeItem(SB_SESI)}catch(e){}
 async function sbAuth(path,body,tok){
   const h={apikey:SB_KEY,'Content-Type':'application/json'};if(tok)h.Authorization='Bearer '+tok;
   const r=await fetch(SB_URL+'/auth/v1/'+path,{method:'POST',headers:h,body:JSON.stringify(body||{})});
@@ -119,10 +122,11 @@ function sbProyeksi(){
 
 let _base=null,_noDelta=false;
 function deltaSnap(){const t={},o=new Map();Object.keys(S).forEach(k=>{if(k==='orders'||k.charAt(0)==='_')return;t[k]=JSON.stringify(S[k])});(S.orders||[]).forEach(x=>o.set(String(x.id),JSON.stringify(x)));return {t,o}}
+function buangPin(){if(SB_PERAN!=='owner')return;delete S.pin;(S.kar||[]).forEach(k=>{delete k.pin})}
 async function save(){
   if(_sv){S.stamp=Date.now();try{localStorage.setItem('kl_bk',JSON.stringify({stamp:S.stamp,t:S.stamp,from:_infl,ver:SB_VER,data:S}))}catch(e){}_q=true;tampilSimpan(true,'Menyimpan… perubahan berikutnya menunggu');return}
   if(SB_ROLE!=='staf'){toast('Masuk sebagai admin/karyawan dulu untuk menyimpan data');return}
-  kKey('0');
+  buangPin();kKey('0');
   _sv=true;_t0=Date.now();ss('t0',_t0);S.stamp=_t0;_infl=_t0;_q=false;try{localStorage.setItem('kl_bk',JSON.stringify({stamp:_t0,t:_t0,ver:SB_VER,data:S}))}catch(e){}tampilSimpan(true);
   setTimeout(()=>{if(_sv)tampilSimpan(true,'Masih menyimpan… jangan tutup halaman')},8000);
   setTimeout(()=>{if(_sv){tampilSimpan(false);toast('Penyimpanan lambat. Periksa koneksi, lalu cek apakah data sudah tersimpan.')}},30000);
@@ -165,18 +169,25 @@ function konflikAsk(){ask('Data sudah diubah dari perangkat lain, jadi simpanan 
   try{await dlf('perubahan-belum-tersimpan-'+Date.now()+'.json',JSON.stringify({app:'kasir-laundry',v:2,t:Date.now(),data:S}))}catch(e){}location.reload()},'Unduh & muat ulang')}
 
 /* ---- layar & aksi login staf ---- */
-function dSbLogin(){$('#app').innerHTML=`<div class="pg"><div class="hero">${logoH()}<h1>Masuk Staf</h1><p class="mut">Khusus admin dan karyawan. Gunakan email dan kata sandi akun staf.</p></div><div class="card"><label>Email</label><input id="sbe" type="email" autocomplete="username" onkeydown="entSb(event)"><label>Kata sandi</label><input id="sbp" type="password" autocomplete="current-password" onkeydown="entSb(event)"><button class="b" style="width:100%;margin:14px 0 0" onclick="sbMasuk()">Masuk</button></div><p class="lnk" onclick="go('pin')">← Kembali</p></div>`}
+function dSbLogin(){$('#app').innerHTML=`<div class="pg"><div class="hero">${logoH()}<h1>Masuk Staf</h1><p class="mut">Khusus admin dan karyawan. Cukup sekali masuk dengan email dan kata sandi.</p></div><div class="card"><label>Email</label><input id="sbe" type="email" autocomplete="username" onkeydown="entSb(event)"><label>Kata sandi</label><input id="sbp" type="password" autocomplete="current-password" onkeydown="entSb(event)"><button class="b" style="width:100%;margin:14px 0 0" onclick="sbMasuk()">Masuk</button></div><p class="lnk" onclick="go('pin')">← Kembali</p></div>`}
 function entSb(e){if(e.key==='Enter')sbMasuk()}
 async function sbMasuk(){const em=$('#sbe').value.trim(),pw=$('#sbp').value;if(!sbOk()){toast('Supabase belum diisi di kode');return}if(!em||!pw){toast('Isi email dan kata sandi');return}
-  toast('Memeriksa…');try{await sbLogin(em,pw);try{sessionStorage.setItem('goPin','1');localStorage.removeItem('kl_at');localStorage.removeItem('acc')}catch(e){}location.reload()}
+  toast('Memeriksa…');try{await sbLogin(em,pw);try{localStorage.removeItem('kl_at');localStorage.removeItem('acc')}catch(e){}location.reload()}
   catch(e){toast(/invalid login|credentials/i.test(e.message)?'Email atau kata sandi salah':'Gagal masuk: '+e.message)}}
-function sbKeluar(){ask('Cabut akses staf dari perangkat ini? Anda harus login email dan kata sandi lagi untuk membuka data.',async()=>{
-  const s=sbSesiGet();try{if(s)await fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+s.at}})}catch(e){}
-  sbSesiSet(null);try{localStorage.removeItem('kl_bk');localStorage.removeItem('lc');localStorage.removeItem('lc2')}catch(e){}ss('adm',null);ss('kar',null);location.reload()},'Cabut')}
+function sbKeluar(){
+  const belum=dirty||_sv||_q||!!bkLocal();
+  ask(belum?'Ada perubahan yang belum tersimpan dan akan hilang kalau keluar. Tetap keluar?':'Keluar dari akun '+(me()||SB_EM||'staf')+'? Sesi Supabase di perangkat ini diakhiri.',sbKeluarGo,'Keluar')}
+async function sbKeluarGo(){
+  toast('Keluar…');
+  try{const t=await Promise.race([sbToken(),new Promise(r=>setTimeout(()=>r(null),4000))]);
+    if(t)await Promise.race([fetch(SB_URL+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+t}}),new Promise(r=>setTimeout(r,4000))])}catch(e){}
+  sbSesiSet(null);
+  try{['kl_sb','kl_bk','kl_at','lc','lc2','acc'].forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}
+  location.replace(location.pathname)}
 
 /* ---- login pelanggan (diverifikasi server) ---- */
 async function cekPin(){
-  if(SB_ROLE==='staf')return cekPinStaf();
+  if(SB_ROLE==='staf'){toast('Keluar dari akun staf dulu untuk masuk sebagai pelanggan');return}
   const v=$('#pn').value,no=$('#pno').value,w=nw(no);
   if(!v||!dig(no)){toast('Isi nomor dan kata sandi');return}
   toast('Memeriksa…');
@@ -416,7 +427,7 @@ function dCust(){
   $('#app').insertAdjacentHTML('beforeend',navBar()+((cscr==='lacak'||cscr==='harga')?csBtn(cscr==='lacak'&&ok?found:null):''));
   if(cscr==='home'){carInit('car');if(S.pop&&S.pop.on&&S.pop.img&&!sg('pp'))$('#app').insertAdjacentHTML('beforeend',popHtml())}if(cscr==='harga')hitK()}
 function logoH(){return S.logo?`<img class="lg" src="${esc(S.logo)}" alt="">`:ico(0)}
-function dPin(){$('#app').innerHTML=`<div class="pg"><div class="hero">${logoH()}<h1>Masuk</h1><p class="mut">${SB_ROLE==='staf'?'Perangkat ini terhubung sebagai staf ('+esc(SB_EM)+'). Masukkan PIN admin, atau masuk sebagai pelanggan.':'Pelanggan: masuk dengan nomor WA dan kata sandi.'}</p></div><div class="card"><label>No. WhatsApp / HP</label><input id="pno" inputmode="tel" placeholder="08123456789" onkeydown="entP(event)"><label>Kata sandi / PIN</label><input id="pn" type="password" onkeydown="entP(event)"><button class="b" style="width:100%;margin:14px 0 0" onclick="cekPin()">Masuk</button><p class="mut" style="text-align:center;margin:14px 0 0">Belum punya akun? <a class="lnk2" onclick="go('reg')">Daftar sekarang</a></p></div><p class="lnk" onclick="go('cust')">Lanjut tanpa akun</p>${SB_ROLE==='staf'?'':'<p class="lnk" onclick="go(\'sbl\')">Masuk sebagai admin / karyawan</p>'}</div>`}
+function dPin(){$('#app').innerHTML=`<div class="pg"><div class="hero">${logoH()}<h1>Masuk</h1><p class="mut">Pelanggan: masuk dengan nomor WA dan kata sandi.</p></div><div class="card"><label>No. WhatsApp / HP</label><input id="pno" inputmode="tel" placeholder="08123456789" onkeydown="entP(event)"><label>Kata sandi</label><input id="pn" type="password" onkeydown="entP(event)"><button class="b" style="width:100%;margin:14px 0 0" onclick="cekPin()">Masuk</button><p class="mut" style="text-align:center;margin:14px 0 0">Belum punya akun? <a class="lnk2" onclick="go('reg')">Daftar sekarang</a></p></div><p class="lnk" onclick="go('cust')">Lanjut tanpa akun</p>${SB_ROLE==='staf'?'':'<p class="lnk" onclick="go(\'sbl\')">Masuk sebagai admin / karyawan</p>'}</div>`}
 function entP(e){if(e.key==='Enter')cekPin()}
 function validWa(w){return /^62\d{8,13}$/.test(nw(w))}
 function nw(x){let n=dig(x);if(n[0]==='0')n='62'+n.slice(1);return n}
@@ -424,7 +435,7 @@ const b64=u=>btoa(String.fromCharCode(...u)),ub64=s=>Uint8Array.from(atob(s),c=>
 async function hpw(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);return b64(new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},k,256)))}
 async function mkPw(pw){const s=crypto.getRandomValues(new Uint8Array(16));return {s:b64(s),h:await hpw(pw,s)}}
 async function vfPw(a,pw){return (await hpw(pw,ub64(a.s)))===a.h}
-function curAcc(){if(SB_ROLE!=='staf')return S._me||null;try{const w=localStorage.getItem('acc');return (S.acc||[]).find(x=>x.w===w)||null}catch(e){return null}}
+function curAcc(){return SB_ROLE==='staf'?null:(S._me||null)}
 function loginBtn(){const a=curAcc();return a?`<button class="lgb" onclick="nv('akun')">${svg('usr')}${esc(a.n.split(' ')[0])}</button>`:''}
 function dReg(){$('#app').innerHTML=`<div class="pg"><div class="hero">${logoH()}<h1>Daftar Akun</h1><p class="mut">Buat akun dengan nomor WhatsApp Anda</p></div><div class="card" id="regc"><label>Nama</label><input id="rn"><label>No. WhatsApp</label><input id="rw" inputmode="tel" placeholder="08123456789"><label>Kata sandi (min. 6 karakter)</label><input id="rp1" type="password"><label>Ulangi kata sandi</label><input id="rp2" type="password"><button class="b" style="width:100%;margin:14px 0 0" onclick="regGo()">Daftar</button><p class="mut" style="text-align:center;margin:14px 0 0">Sudah punya akun? <a class="lnk2" onclick="go('pin')">Masuk</a></p></div><p class="lnk" onclick="go('cust')">Kembali</p></div>`}
 async function regGo(){const n=$('#rn').value.trim(),w=nw($('#rw').value),p1=$('#rp1').value,p2=$('#rp2').value;
@@ -432,17 +443,9 @@ async function regGo(){const n=$('#rn').value.trim(),w=nw($('#rw').value),p1=$('
   toast('Membuat kode pengaman...');const x=await mkPw(p1),code=b64u(JSON.stringify({n,w,s:x.s,h:x.h})),cs=(S.pm||{}).cs;
   const msg='Halo '+S.nama+', saya ingin mendaftar akun.\nNama: '+n+'\nNo. WA: '+w+'\nKode pendaftaran:\n'+code;
   $('#regc').innerHTML=`<h2>Pendaftaran siap dikirim</h2><p>Kirim kode ini ke admin lewat WhatsApp. Akun aktif setelah admin memverifikasi dan menyimpannya. Kata sandi Anda <b>tidak</b> ikut terkirim, hanya kode pengaman.</p>${cs?`<a class="b" style="display:block;text-align:center;margin:12px 0 0" target="_blank" rel="noopener" href="https://wa.me/${nomor(cs)}?text=${encodeURIComponent(msg)}">Kirim ke Admin via WA</a>`:'<p style="color:var(--bad)">Nomor CS belum diatur. Hubungi admin langsung.</p>'}<textarea readonly style="margin-top:12px;min-height:80px">${esc(code)}</textarea><button class="b g" style="width:100%;margin:8px 0 0" onclick="go('pin')">Ke halaman masuk</button>`}
-function me(){return sg('kar')||''}
-function owner(){return !sg('kar')}
-async function cekPinStaf(){const v=$('#pn').value,no=$('#pno').value,nd=dig(no),ad=dig(S.admNo||''),k=(S.kar||[]).find(x=>x.on!==0&&x.pin&&x.pin===v&&dig(x.hp||'')===nd);
-  if(SB_PERAN==='owner'&&!S.pin&&(!ad||nd===ad)){
-    if(!/^\d{4,8}$/.test(v)||v==='1234'||v==='0000'||/^(\d)\1+$/.test(v)){toast('PIN admin belum dibuat. Isi PIN baru 4-8 angka (bukan 1234/0000/angka kembar) di kolom ini, lalu Masuk.');return}
-    S.pin=v;adm=true;ss('adm','1');ss('kar',null);draw();save();return}
-  if(SB_PERAN==='owner'&&S.pin&&v===S.pin&&(!ad||nd===ad)){adm=true;ss('adm','1');ss('kar',null);draw();return}
-  if(k&&SB_PERAN==='owner'){adm=true;ss('adm','1');ss('kar',k.n);draw();return}
-  const a=(S.acc||[]).find(x=>x.w===nw(no));
-  if(a&&v&&await vfPw(a,v)){try{localStorage.setItem('acc',a.w)}catch(e){}scr='cust';cscr='akun';draw();return}
-  toast('No. HP/WA atau kata sandi salah')}
+function me(){return SB_ROLE==='staf'&&SB_PERAN!=='owner'?(SB_NAMA||SB_EM||'Kasir'):''}
+function owner(){return SB_PERAN==='owner'}
+
 function adv(id){const o=S.orders.find(x=>x.id==id);if(o.st<3){o.st++;if(o.st>=2&&o.it)o.it.forEach(x=>x.s=1);(o.log=o.log||[{t:o.masuk,s:0}]).push({t:Date.now(),s:o.st,by:me()||'Admin'});aud('Status',o,STN[o.st]);if(o.st===2){o.sel=Date.now();ss('last',id+':d')}save()}}
 function dismiss(){ss('last',null);draw()}
 function warna(o){const d=o.est-Date.now();return d<0?'var(--bad)':d<3*36e5?'var(--warn)':'var(--ok)'}
@@ -505,7 +508,7 @@ function dAdm(){
     <div class="ban" style="background:#b7791f;margin-top:10px"><b>Jangan ketik API key atau rahasia di sini.</b><br>Halaman ini bisa dibuka siapa pun yang punya tautannya. Kunci disimpan di server, bukan di sini. Penjelasan lengkap ada di berkas PANDUAN-MUTASI.md.</div></div>
     <div class="card"><h2>Produk</h2><p class="mut">Barang yang dijual di kasir, mis. plastik laundry, parfum, hanger. Stok boleh dikosongkan kalau tidak mau dihitung.</p>${(S.prd||[]).map((p,i)=>`<div style="border-top:1px solid var(--bd);padding:8px 0;opacity:${p.on===0?.5:1}"><input id="pn${i}" placeholder="Nama produk" value="${esc(p.n)}"><div class="row" style="margin-top:6px;gap:8px"><input id="ph${i}" type="number" min="0" inputmode="numeric" placeholder="Harga" style="flex:1" value="${p.h||''}"><input id="ps${i}" type="number" min="0" inputmode="numeric" placeholder="Stok (opsional)" style="flex:1" value="${p.st==null?'':p.st}"></div>${p.st!=null&&p.st<=3?`<div style="color:var(--bad);font-size:12.5px;margin-top:4px">${p.st<=0?'Stok habis':'Stok menipis'}</div>`:''}<button class="b g" onclick="togPrd(${i})">${p.on===0?'Aktifkan':'Nonaktifkan'}</button><button class="b g" style="color:var(--bad);border-color:var(--bad)" onclick="hapusPrd(${i})">Hapus</button></div>`).join('')}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${['Plastik laundry','Parfum','Hanger'].map(n=>`<button class="b g" style="margin:0" onclick="tambahPrd('${n}')">+ ${n}</button>`).join('')}<button class="b g" style="margin:0" onclick="tambahPrd()">+ Produk lain</button></div></div>
     <div class="card"><h2>Diskon</h2><p class="mut">Daftar diskon yang bisa dipilih kasir saat membuat order.</p>${(S.dsk||[]).map((d,i)=>`<div style="border-top:1px solid var(--bd);padding:8px 0;opacity:${d.on===0?.5:1}"><input id="dn${i}" placeholder="Nama diskon" value="${esc(d.n)}"><div class="row" style="margin-top:6px;gap:8px"><select id="dt${i}" style="flex:1"><option value="p" ${d.t==='p'?'selected':''}>Persen (%)</option><option value="r" ${d.t!=='p'?'selected':''}>Rupiah (Rp)</option></select><input id="dv${i}" type="number" min="0" inputmode="numeric" placeholder="Nilai" style="flex:1" value="${d.v||''}"></div><button class="b g" onclick="togDsk(${i})">${d.on===0?'Aktifkan':'Nonaktifkan'}</button><button class="b g" style="color:var(--bad);border-color:var(--bad)" onclick="hapusDsk(${i})">Hapus</button></div>`).join('')}<button class="b g" onclick="tambahDsk()">+ Tambah diskon</button></div>
-    <div class="card"><h2>Keamanan</h2><p class="mut">Data tersimpan di Supabase dan hanya terbuka lewat akun staf. Masuk sebagai <b>${esc(SB_EM||'-')}</b> (${esc(SB_PERAN||'-')}). PIN di aplikasi hanya membedakan peran admin/karyawan, pengaman datanya adalah akun staf ini.</p><button class="b g" onclick="sbKeluar()">Cabut akses perangkat ini</button></div><div class="card"><h2>Karyawan</h2><p class="mut">Karyawan masuk dari halaman pelanggan (tombol Masuk) memakai No. HP dan PIN, dan menjadi penanggung jawab order yang ia buat. Karyawan tidak bisa membuka Laporan, Atur, Pusat Data, dan tidak bisa menghapus order.</p>${(S.kar||[]).map((k,i)=>`<div style="border-top:1px solid var(--bd);padding:8px 0;opacity:${k.on===0?.5:1}"><input id="kn${i}" placeholder="Nama karyawan" value="${esc(k.n)}"><input id="kh${i}" inputmode="tel" placeholder="No. HP" style="margin-top:6px" value="${esc(k.hp)}"><input id="kp${i}" inputmode="numeric" placeholder="PIN 4-8 angka" style="margin-top:6px" value="${esc(k.pin)}"><input id="kj${i}" placeholder="Jabatan (opsional)" style="margin-top:6px" value="${esc(k.jab)}"><button class="b g" onclick="togKar(${i})">${k.on===0?'Aktifkan':'Nonaktifkan'}</button><button class="b g" style="color:var(--bad);border-color:var(--bad)" onclick="hapusKar(${i})">Hapus</button></div>`).join('')}<button class="b g" onclick="tambahKar()">+ Tambah karyawan</button><button class="b g" onclick="xlsTpl()">Unduh template Excel</button><label class="b g" style="cursor:pointer">Unggah Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="impKar(this)"></label><button class="b g" onclick="nvA('dat')">Buka Pusat Data</button></div>
+    <div class="card"><h2>Keamanan</h2><p class="mut">Data tersimpan di Supabase dan hanya terbuka lewat akun staf. Masuk sebagai <b>${esc(SB_EM||'-')}</b> (${esc(SB_PERAN||'-')}). Hanya ada satu login: akun ini. Peran (admin/karyawan) ditentukan server. Keluar mengakhiri sesi Supabase di perangkat ini.</p><button class="b g" onclick="sbKeluar()">Keluar</button></div><div class="card"><h2>Karyawan</h2><p class="mut">Daftar nama karyawan untuk penanggung jawab order. Karyawan yang perlu login memakai akun Supabase sendiri (peran kasir, dibuat di Supabase); mereka tidak bisa membuka Laporan, Atur, Pusat Data, dan tidak bisa menghapus order.</p>${(S.kar||[]).map((k,i)=>`<div style="border-top:1px solid var(--bd);padding:8px 0;opacity:${k.on===0?.5:1}"><input id="kn${i}" placeholder="Nama karyawan" value="${esc(k.n)}"><input id="kh${i}" inputmode="tel" placeholder="No. HP" style="margin-top:6px" value="${esc(k.hp)}"><input id="kj${i}" placeholder="Jabatan (opsional)" style="margin-top:6px" value="${esc(k.jab)}"><button class="b g" onclick="togKar(${i})">${k.on===0?'Aktifkan':'Nonaktifkan'}</button><button class="b g" style="color:var(--bad);border-color:var(--bad)" onclick="hapusKar(${i})">Hapus</button></div>`).join('')}<button class="b g" onclick="tambahKar()">+ Tambah karyawan</button><button class="b g" onclick="xlsTpl()">Unduh template Excel</button><label class="b g" style="cursor:pointer">Unggah Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="impKar(this)"></label><button class="b g" onclick="nvA('dat')">Buka Pusat Data</button></div>
     <div class="card"><h2>Popup poster promo</h2><button class="chp ${(S.pop||{}).on?'on':''}" onclick="togPop()">${(S.pop||{}).on?'Aktif':'Nonaktif'}</button>
     <label>Poster (gambar saja)</label>${(S.pop||{}).img?`<img src="${esc(S.pop.img)}" alt="" style="display:block;max-width:150px;max-height:200px;border-radius:10px;margin:0 0 8px"><button class="b g" onclick="hapusPp()">Hapus poster</button>`:''}<input type="file" accept="image/*" onchange="ppUp(this)">
     <label>Ukuran poster</label><div class="mt">${[['s','Kecil'],['m','Sedang']].map(([k,l])=>`<button class="${((S.pop||{}).w||'m')===k?'on':''}" onclick="ppW('${k}')">${l}</button>`).join('')}</div>
@@ -521,7 +524,7 @@ function dAdm(){
     <label>Alamat</label><input id="sa" value="${esc((S.pm||{}).alamat)}"><label>Jam buka</label><input id="sj" placeholder="Senin-Sabtu 08.00-20.00" value="${esc((S.pm||{}).jam)}">
     <label>Instagram (opsional)</label><input id="si" placeholder="@laundrysaya" value="${esc((S.pm||{}).ig)}">
     <label>Link halaman ini (untuk pelanggan, tempel dari tombol bagikan)</label>
-    <input id="sb" value="${esc(S.base)}"><label>No. HP admin (untuk masuk)</label><input id="sno" inputmode="tel" value="${esc(S.admNo)}" placeholder="08123456789"><label>Ganti PIN admin (4-8 angka)</label><input id="sx" type="password" inputmode="numeric" placeholder="Kosongkan jika tidak diganti"><button class="b g" onclick="cadang()">Unduh cadangan (CSV)</button><button class="b g" onclick="cadangJson()">Cadangan lengkap (JSON)</button><label class="b g" style="cursor:pointer">Pulihkan dari JSON<input type="file" accept=".json,application/json" style="display:none" onchange="pulihJson(this)"></label><button class="b g" onclick="ask('Perkecil kualitas foto poster, banner, dan logo supaya penyimpanan lebih cepat? Foto menjadi sedikit kurang tajam.',()=>kecilkan(),'Perkecil')">Perkecil ukuran gambar</button></div></div>`;
+    <input id="sb" value="${esc(S.base)}"><label>No. WA admin (penerima kode pendaftaran pelanggan)</label><input id="sno" inputmode="tel" value="${esc(S.admNo)}" placeholder="08123456789"><button class="b g" onclick="cadang()">Unduh cadangan (CSV)</button><button class="b g" onclick="cadangJson()">Cadangan lengkap (JSON)</button><label class="b g" style="cursor:pointer">Pulihkan dari JSON<input type="file" accept=".json,application/json" style="display:none" onchange="pulihJson(this)"></label><button class="b g" onclick="ask('Perkecil kualitas foto poster, banner, dan logo supaya penyimpanan lebih cepat? Foto menjadi sedikit kurang tajam.',()=>kecilkan(),'Perkecil')">Perkecil ukuran gambar</button></div></div>`;
   if(tab==='home'&&ban){body=body.replace('<div class="gp ag">',ban+'<div class="gp ag">');ban=''}
   $('#app').innerHTML=`${(tab==='home'||tab==='det'||tab==='hut')?'':`<div class="abar"><div><b>${TT[tab==='riw'?'pend':tab]}</b><small>${esc(me()||'Admin')}</small></div><span class="abr">${thSw()}<button class="lgb" style="margin:0" onclick="askOut()">Keluar</button></span></div>`}${ban}${body}${payHtml()}${tuHtml()}${okHtml()}`;
   $('#app').insertAdjacentHTML('beforeend',admNav());if(pid)updKem();if(tab==='set')tidyAtur();
@@ -538,7 +541,7 @@ const b64u=s=>btoa(unescape(encodeURIComponent(s))),ub64u=s=>decodeURIComponent(
 function ask(msg,fn,ok){cbk=fn;const e=document.getElementById('ask');if(e)e.remove();$('#app').insertAdjacentHTML('beforeend',`<div class="ov hi" id="ask"><div class="md"><h2>Konfirmasi</h2><p>${esc(msg)}</p><div class="row" style="gap:10px"><button class="b g" style="flex:1;margin:0" onclick="askX()">Batal</button><button class="b" style="flex:1;margin:0" onclick="askOk()">${esc(ok||'Ya')}</button></div></div></div>`)}
 function askX(){cbk=null;const e=document.getElementById('ask');if(e)e.remove()}
 function askOk(){const f=cbk;askX();if(f)f()}
-function askOut(){ask('Keluar dari akun '+(me()||'admin')+'?',()=>keluar(),'Keluar')}
+function askOut(){sbKeluar()}
 function lnTot(){return ln.reduce((s,x)=>s+Math.round((+x.qty||0)*(+x.hs||0)),0)}
 function qtyTxt(){const m={};ln.forEach(x=>{const u=SV[x.sv].u;m[u]=(m[u]||0)+(+x.qty||0)});return Object.entries(m).map(([u,q])=>(Math.round(q*100)/100)+' '+u).join(', ')||'0'}
 function lineH(x,i){const v=SV[x.sv],sub=Math.round((+x.qty||0)*(+x.hs||0));
@@ -591,18 +594,18 @@ function simpan(){let nama=$('#fn').value.trim(),est=$('#fe').value;let wa=$('#f
   if(ed){const o=S.orders.find(x=>x.id===ed);stokGeser(items(o),1);stokGeser(it,-1);Object.assign(o,owner()?{pj:$('#fp').value}:{},ex(),{nama,wa,it,sv:f.sv,qty:f.qty,hs:f.hs,total:tot,disk:dis,cat:$('#fc').value.trim(),est:new Date(est).getTime()});aud('Ubah order',o,rp(tot));ed=null;tab='pend';save();return}
   const kv=nw(wa);let vcu=0;if(vcOn&&S.vc&&S.vc[kv]>=vcOn){vcu=vcOn;S.vc[kv]-=vcOn}vcOn=0;const now=Date.now(),o={vc:vcu,id:++S.seq,no:newNo(now),...ex(),nama,wa,it,sv:f.sv,qty:f.qty,hs:f.hs,total:tot,pj:$('#fp').value,disk:dis,dn:dskText(),cat:$('#fc').value.trim(),masuk:now,est:new Date(est).getTime(),st:0,bayar:'Belum',dp:0,met:'Tunai',pay:[],log:[{t:now,s:0}]};
   if(solo){o.jual=1;o.st=3;o.est=now;o.sel=now;o.log=[{t:now,s:0},{t:now,s:3,by:me()||'Admin'}]}stokGeser(it,-1);aud('Buat order',o,rp(tot));if(!(S.cu||[]).some(x=>nw(x.wa)===nw(wa)))(S.cu=S.cu||[]).push({nama,wa,alamat:'',cat:'',blok:0,t:Date.now(),kd:nextKd()});S.orders.push(o);ss('last',o.id+':n');newOid=o.id;tab='pend';payInit(o.id);draw()}
-function bacaSv(){dirty=true;S.svc.forEach((s,i)=>{const n=$('#vn'+i);if(!n)return;s.n=n.value.trim()||s.n;s.h=+$('#vh'+i).value||0;s.u=$('#vu'+i).value.trim()||'kg';s.j=+$('#vj'+i).value||24});if($('#sn')){S.nama=$('#sn').value.trim()||'Laundry Saya';S.base=$('#sb').value.trim();S.info=$('#sg').value.trim();S.prd=(S.prd||[]).map((p,i)=>{const n=$('#pn'+i);if(!n)return p;p.n=n.value.trim()||p.n;p.h=Math.max(0,+$('#ph'+i).value||0);const s=$('#ps'+i).value;p.st=s===''?null:Math.max(0,Math.round(+s||0));SV[p.k]=p;return p});if($('#mup')){S.mutProv=$('#mup').value;S.mutUrl=$('#mus').value.trim()}S.dsk=(S.dsk||[]).map((d,i)=>{const n=$('#dn'+i);return n?{n:n.value.trim()||d.n,t:$('#dt'+i).value==='p'?'p':'r',v:Math.max(0,+$('#dv'+i).value||0),on:d.on===0?0:1}:d});S.pop=Object.assign({},S.pop,{msg:$('#ppm').value.trim()});S.admNo=$('#sno').value.trim();S.nHari=Math.max(1,+$('#snh').value||3);S.kar=(S.kar||[]).map((k,i)=>{const g=id=>$('#'+id+i);return {n:g('kn')?(g('kn').value.trim()||k.n):k.n,pin:g('kp')?g('kp').value.trim():k.pin,hp:g('kh')?g('kh').value.trim():(k.hp||''),jab:g('kj')?g('kj').value.trim():(k.jab||''),on:k.on===0?0:1}});const _x=(S.kar||[]).map((k,i)=>{const a=$('#kn'+i),b=$('#kp'+i);return {n:a?(a.value.trim()||k.n):k.n,pin:b?b.value.trim():k.pin}});S.rev=$('#sr').value.trim();S.pj=(S.promo||[]).map((u,i)=>{const e=$('#pj'+i);return e?e.value.trim():((S.pj||[])[i]||'')});S.qris=$('#sq').value.replace(/[\r\n\t]+/g,'').trim();S.ops={b:$('#jb').value,t:$('#jt').value,h:(S.ops&&S.ops.h)||[1,2,3,4,5,6]};S.faq=$('#sf').value;S.pst=[0,1,2,3].map(i=>$('#p'+i).value.trim());S.tpl={baru:$('#tb').value,selesai:$('#ts').value,ingat:$('#ti').value};S.pm={nama:$('#sp').value.trim(),cs:$('#sc').value.trim(),alamat:$('#sa').value.trim(),jam:$('#sj').value.trim(),ig:$('#si').value.trim()}}}
+function bacaSv(){dirty=true;S.svc.forEach((s,i)=>{const n=$('#vn'+i);if(!n)return;s.n=n.value.trim()||s.n;s.h=+$('#vh'+i).value||0;s.u=$('#vu'+i).value.trim()||'kg';s.j=+$('#vj'+i).value||24});if($('#sn')){S.nama=$('#sn').value.trim()||'Laundry Saya';S.base=$('#sb').value.trim();S.info=$('#sg').value.trim();S.prd=(S.prd||[]).map((p,i)=>{const n=$('#pn'+i);if(!n)return p;p.n=n.value.trim()||p.n;p.h=Math.max(0,+$('#ph'+i).value||0);const s=$('#ps'+i).value;p.st=s===''?null:Math.max(0,Math.round(+s||0));SV[p.k]=p;return p});if($('#mup')){S.mutProv=$('#mup').value;S.mutUrl=$('#mus').value.trim()}S.dsk=(S.dsk||[]).map((d,i)=>{const n=$('#dn'+i);return n?{n:n.value.trim()||d.n,t:$('#dt'+i).value==='p'?'p':'r',v:Math.max(0,+$('#dv'+i).value||0),on:d.on===0?0:1}:d});S.pop=Object.assign({},S.pop,{msg:$('#ppm').value.trim()});S.admNo=$('#sno').value.trim();S.nHari=Math.max(1,+$('#snh').value||3);S.kar=(S.kar||[]).map((k,i)=>{const g=id=>$('#'+id+i);return {n:g('kn')?(g('kn').value.trim()||k.n):k.n,hp:g('kh')?g('kh').value.trim():(k.hp||''),jab:g('kj')?g('kj').value.trim():(k.jab||''),on:k.on===0?0:1}});S.rev=$('#sr').value.trim();S.pj=(S.promo||[]).map((u,i)=>{const e=$('#pj'+i);return e?e.value.trim():((S.pj||[])[i]||'')});S.qris=$('#sq').value.replace(/[\r\n\t]+/g,'').trim();S.ops={b:$('#jb').value,t:$('#jt').value,h:(S.ops&&S.ops.h)||[1,2,3,4,5,6]};S.faq=$('#sf').value;S.pst=[0,1,2,3].map(i=>$('#p'+i).value.trim());S.tpl={baru:$('#tb').value,selesai:$('#ts').value,ingat:$('#ti').value};S.pm={nama:$('#sp').value.trim(),cs:$('#sc').value.trim(),alamat:$('#sa').value.trim(),jam:$('#sj').value.trim(),ig:$('#si').value.trim()}}}
 function tog(i){bacaSv();S.svc[i].on=S.svc[i].on?0:1;draw()}
 function tambahSv(){bacaSv();const s={k:'s'+Date.now(),n:'Layanan baru',h:0,u:'kg',j:48,on:1};S.svc.push(s);SV[s.k]=s;draw()}
 function atur(){ask('Simpan semua perubahan pengaturan? Perubahan langsung tampil ke pelanggan.',()=>atur2(),'Simpan')}
-function atur2(){const np=$('#sx').value.trim();if(np&&!/^\d{4,8}$/.test(np)){toast('PIN harus 4-8 angka');return}if(np)S.pin=np;bacaSv();const pins=(S.kar||[]).map(k=>k.pin);if(pins.some(x=>!/^\d{4,8}$/.test(x))||new Set(pins).size!==pins.length||(S.pin&&pins.includes(S.pin))){toast('PIN karyawan harus 4-8 angka, tidak kembar, dan beda dari PIN admin');return}save()}
+function atur2(){bacaSv();save()}
 async function cadang(){
   const q=v=>{let s=String(v==null?'':v);if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
   const h=['Nota','Nama','WA','Layanan','Jumlah','Satuan','Diskon','Total','Pembayaran','DP','Status','Masuk','Estimasi','Catatan','Metode'];
   const r=S.orders.map(o=>[o.no||o.id,o.nama,o.wa,itemsTxt(o),items(o).reduce((s,x)=>s+x.qty,0),'',o.disk||0,o.total,o.bayar,o.dp,STN[o.st],new Date(o.masuk).toISOString(),new Date(o.est).toISOString(),o.cat||'',o.met||''].map(q).join(','));
   const d=_d||(_d=await cap('downloads'));if(!d){toast('Unduhan tidak tersedia di tampilan ini');return}try{localStorage.setItem('bk',Date.now())}catch(e){}
   try{await d.save({filename:'cadangan-laundry-'+new Date().toISOString().slice(0,10)+'.csv',data:'\ufeff'+[h.map(q).join(','),...r].join('\n')})}catch(e){}}
-function keluar(){if(SB_ROLE==='staf'&&SB_PERAN!=='owner'){sbKeluar();return}adm=false;ss('adm',null);ss('kar',null);scr='cust';draw()}
+function keluar(){sbKeluar()}
 function wr(o){return 'https://wa.me/'+nomor(o.wa)+'?text='+encodeURIComponent(fill('ingat',o))}
 function remind(){const a=S.orders.filter(o=>o.st===2);if(!a.length)return '';
   return `<div class="card full"><h2>Belum diambil (${a.length})</h2>${a.map(o=>`<div class="row" style="padding:4px 0"><span>${nn(o)} ${esc(o.nama)}${o.sel?(()=>{const d=Math.floor((Date.now()-o.sel)/864e5),n=S.nHari||3;return d>=n?` <span class="chip s4">${d} hari, lewat batas</span>`:` <span class="mut">· ${d} hari</span>`})():''}</span><a class="b g" style="margin:0" target="_blank" rel="noopener" href="${wr(o)}">Ingatkan</a></div>`).join('')}</div>`}
@@ -911,7 +914,7 @@ function applyTh(){try{const x=localStorage.getItem('th');if(x==='light'||x==='d
 function setTh(x){try{x==='auto'?localStorage.removeItem('th'):localStorage.setItem('th',x)}catch(e){}applyTh();draw()}
 function themeChips(){let x='auto';try{x=localStorage.getItem('th')||'auto'}catch(e){}return `<div class="mt">${[['auto','Ikuti perangkat'],['light','Terang'],['dark','Gelap']].map(([k,l])=>`<button class="${x===k?'on':''}" onclick="setTh('${k}')">${l}</button>`).join('')}</div>`}
 function dAkun(){const a=curAcc();
-  if(!a)return `<div class="pg">${ban()}<div class="hero">${logoH()}<h1>Akun Saya</h1><p class="mut">Masuk untuk melihat riwayat cucian, poin, dan saldo tanpa memasukkan nomor nota. Admin dan karyawan juga masuk lewat sini.</p></div><div class="card"><button class="b" style="width:100%;margin:0" onclick="go('pin')">Masuk</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="go('reg')">Daftar akun baru</button></div><div class="card"><h2>Tampilan</h2>${themeChips()}</div></div>`;
+  if(!a)return `<div class="pg">${ban()}<div class="hero">${logoH()}<h1>Akun Saya</h1><p class="mut">Masuk untuk melihat riwayat cucian, poin, dan saldo tanpa memasukkan nomor nota. Admin dan karyawan masuk lewat tautan &quot;Masuk sebagai admin / karyawan&quot;.</p></div><div class="card"><button class="b" style="width:100%;margin:0" onclick="go('pin')">Masuk</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="go('reg')">Daftar akun baru</button></div><div class="card"><h2>Tampilan</h2>${themeChips()}</div></div>`;
   const mine=S.orders.filter(o=>nw(o.wa)===a.w).reverse(),w0=mine[0]&&mine[0].wa,sl=w0?((S.sal&&S.sal[nw(w0)])||0):0;
   return `<div class="pg">${ban()}<div class="hero"><div class="mono" style="width:72px;height:72px;font-size:30px;border-radius:50%">${esc((a.n||'?')[0].toUpperCase())}</div><h1>${esc(a.n)}</h1><p class="mut">${esc(a.tw||a.w)}</p></div>
   <div class="sg"><div class="st2" style="--c:#f59e0b"><small>Poin</small><b>${w0?poin(w0):0}</b></div><div class="st2" style="--c:#10b981"><small>Saldo</small><b>${rp(sl)}</b></div></div>
@@ -939,7 +942,7 @@ function tidyAtur(){const g=document.querySelector('#app .gr.two');if(!g)return;
 const fx=x=>new Date(x).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
 function ordRows(){return S.orders.map(o=>({Nota:o.no||o.id,Tanggal:fx(o.masuk),Pelanggan:o.nama,WA:wShow(o.wa),Layanan:itemsTxt(o),Diskon:o.disk||0,Total:o.total,Dibayar:o.total-tagih(o),Sisa:tagih(o),Status:STN[o.st],Pembayaran:o.bayar,PJ:o.pj||'',Catatan:o.cat||'',Estimasi:fx(o.est)}))}
 function pelRows(){return pelList().map(c=>({Nama:c.nama,WA:c.wa,'Jumlah order':c.c,'Total belanja':c.t,Terakhir:fx(c.l),Poin:poin(c.wa),Saldo:(S.sal&&S.sal[c.k])||0,Hutang:S.orders.filter(o=>nw(o.wa)===c.k&&o.st===3&&tagih(o)>0).reduce((s,o)=>s+tagih(o),0)}))}
-function karRows(){return (S.kar||[]).map(k=>({Nama:k.n,'No HP':k.hp||'',PIN:k.pin,Jabatan:k.jab||'',Status:k.on===0?'Nonaktif':'Aktif'}))}
+function karRows(){return (S.kar||[]).map(k=>({Nama:k.n,'No HP':k.hp||'',Jabatan:k.jab||'',Status:k.on===0?'Nonaktif':'Aktif'}))}
 function payRows(){const r=[];S.orders.forEach(o=>(o.pay||legacy(o)).forEach(p=>r.push({Nota:o.no||o.id,Pelanggan:o.nama,Waktu:fx(p.t),Metode:p.m,Jumlah:p.a,Catatan:p.n||'',Oleh:p.by||''})));(S.tu||[]).forEach(x=>r.push({Nota:'Saldo',Pelanggan:'',Waktu:fx(x.t),Metode:x.m,Jumlah:x.a,Catatan:'Isi saldo',Oleh:''}));return r}
 function tesRows(){return (S.tes||[]).map(x=>({Nama:x.n,Bintang:x.b,Isi:x.t,Tanggal:fx(x.d),Tampil:x.on===0?'Tidak':'Ya'}))}
 function aknRows(){return (S.acc||[]).map(a=>({Nama:a.n,WA:a.w,Terdaftar:fx(a.t)}))}
@@ -986,14 +989,14 @@ async function xlsSave(fn,sheets){
   await dlf(fn+'.csv','\ufeff'+toCsv(sheets[0][1]));if(sheets.length>1)toast('Excel belum termuat, yang diunduh hanya data aktif (CSV)')}
 function xlsDl(k){xlsSave('data-laundry-'+DS[k][0].toLowerCase(),[[DS[k][0],DS[k][1]()]])}
 function xlsAll(){xlsSave('data-laundry-lengkap',Object.entries(DS).map(([k,v])=>[v[0],v[1]()]))}
-function xlsTpl(){xlsSave('template-karyawan',[['Karyawan',[{Nama:'Budi','No HP':'08123456789',PIN:'',Jabatan:'Kasir',Status:'Aktif'}]]])}
+function xlsTpl(){xlsSave('template-karyawan',[['Karyawan',[{Nama:'Budi','No HP':'08123456789',Jabatan:'Kasir',Status:'Aktif'}]]])}
 function csvRows(x){const rows=[];let cur=[],f='',q=false;x=x.replace(/^\ufeff/,'');
   for(let i=0;i<x.length;i++){const c=x[i];if(q){if(c==='"'){if(x[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===','||c===';'){cur.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&x[i+1]==='\n')i++;cur.push(f);f='';if(cur.some(v=>v!==''))rows.push(cur);cur=[]}else f+=c}
   cur.push(f);if(cur.some(v=>v!==''))rows.push(cur);const h=(rows.shift()||[]).map(v=>v.trim());return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]||''])))}
 async function impKar(inp){const f=inp.files&&inp.files[0];if(!f)return;let rows;
   try{if(typeof XLSX!=='undefined'&&XLSX.read){const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''})}else rows=csvRows(await f.text())}catch(e){toast('File tidak bisa dibaca');return}
   const g=(r,...ks)=>{for(const k of ks){const kk=Object.keys(r).find(x=>x.trim().toLowerCase()===k);if(kk!==undefined&&String(r[kk]).trim()!=='')return String(r[kk]).trim()}return ''};
-  const inc=rows.map(r=>{let pin=g(r,'pin');if(/^\d{1,3}$/.test(pin))pin=pin.padStart(4,'0');return {n:g(r,'nama'),hp:g(r,'no hp','no. hp','hp','nomor hp'),pin,jab:g(r,'jabatan'),on:/^(nonaktif|tidak|0|no)/i.test(g(r,'status','aktif'))?0:1}}).filter(x=>x.n);
+  const inc=rows.map(r=>{return {n:g(r,'nama'),hp:g(r,'no hp','no. hp','hp','nomor hp'),jab:g(r,'jabatan'),on:/^(nonaktif|tidak|0|no)/i.test(g(r,'status','aktif'))?0:1}}).filter(x=>x.n);
   if(!inc.length){toast('Tidak ada data karyawan yang terbaca. Pakai template.');return}
   bacaSv();S.kar=S.kar||[];let add=0,upd=0;
   inc.forEach(x=>{const i=S.kar.findIndex(k=>(x.hp&&dig(k.hp||'')===dig(x.hp))||(!x.hp&&k.n.toLowerCase()===x.n.toLowerCase()));if(i<0){S.kar.push(x);add++}else{S.kar[i]=Object.assign({},S.kar[i],x);upd++}});
@@ -1207,9 +1210,7 @@ function splash(){if(adm)return;const d=document.createElement('div');d.id='spl'
 (async function boot(){
 {const a=document.getElementById('app');if(a&&sbOk())a.innerHTML='<p style="text-align:center;margin:40vh 16px 0;opacity:.6">Memuat data…</p>'}
 await sbBoot();
-if(SB_ROLE!=='staf'){adm=false;ss('adm',null);ss('kar',null)}
-if(sg('goPin')){ss('goPin',null);if(SB_ROLE==='staf'&&SB_PERAN==='owner'){adm=true;ss('adm','1');ss('kar',null)}}
-if(SB_ROLE==='staf'&&SB_PERAN!=='owner'){adm=true;ss('adm','1');ss('kar',SB_NAMA||SB_EM||'Kasir')}
+if(SB_ROLE!=='staf'){adm=false;ss('adm',null)}else{adm=true;ss('adm','1')}
 if(S.warna)document.documentElement.style.setProperty('--pri',S.warna);
 backfill();applyTh();
 let _autoSave=false;{const bk=SB_ROLE==='staf'?bkLocal():null;if(bk&&bk.from&&bk.from===S.stamp){try{Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,bk.data);backfill();_autoSave=true}catch(e){}}}
@@ -1219,4 +1220,5 @@ if(ds==='mut'&&mutT)mutR=mutParse(mutT);
 lacakDariUrl();try{history.replaceState(navSnap(),'');_lk=navKey()}catch(e){}
 splash();draw();
 if(_autoSave)setTimeout(()=>{toast('Menyimpan perubahan berikutnya…');save()},500);
+else if(SB_PERAN==='owner'&&(S.pin||(S.kar||[]).some(k=>k.pin)))setTimeout(save,900);
 })();
