@@ -444,3 +444,21 @@ button:active,.kc:active,.tl:active,.st2:active,.pcr:active{transition:transform
 .shpstp{display:flex;align-items:center;gap:8px}.shpstp b{min-width:18px;text-align:center}
 .shpstp button{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--pri);background:transparent;color:var(--pri);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;margin:0}
 .shpov{background:rgba(20,24,30,.78)}.shpimg:has(.shpov){color:transparent}
+
+/* ===== pesanan online ===== */
+.psn{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--warn);border-radius:14px;padding:10px 12px;margin:6px 0}
+.psn.diterima{border-left-color:var(--ok)}.psn.ditolak{border-left-color:var(--bad)}.psi{font-size:22px}
+.psk{display:inline-block;font-family:"Courier New",monospace;font-size:28px;font-weight:800;letter-spacing:3px;background:var(--bg);border:2px dashed var(--pri);border-radius:14px;padding:8px 20px;color:var(--pri)}
+
+.po{border:1.5px solid var(--pri)}.po h2{margin:0 0 4px}.pop{padding:10px 0;border-top:1px solid var(--bd)}.po h2+.pop{border-top:0}
+label.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.35;cursor:pointer;margin:10px 0 0}label.chk input{width:20px;height:20px;flex:none;margin:0}
+.full{grid-column:1/-1}
+
+/* ===== laporan visual ===== */
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi>div{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--c,var(--pri));border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi small{color:var(--mut);font-size:12px}.kpi b{font-size:18px;font-weight:800;overflow-wrap:anywhere}
+.dn{display:flex;align-items:center;gap:14px}.dnl{flex:1;min-width:0}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.hb{margin:10px 0}.hbt{display:flex;justify-content:space-between;gap:8px;font-size:14px}.hbt b{font-size:13px;font-weight:600;color:var(--mut);text-align:right}
+.hbb{height:9px;background:var(--bg);border-radius:99px;margin-top:5px;overflow:hidden}.hbb i{display:block;height:100%;border-radius:99px}
+.lgr{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;padding:5px 0}.lgr b{font-size:14px;white-space:nowrap}.lgr .mut{font-size:12px}
+.sjm .sji{width:100%;height:auto;aspect-ratio:1;font-size:34px;border-radius:12px}.sjm b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
