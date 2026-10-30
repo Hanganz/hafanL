@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <!-- >>> TAG KEAMANAN: Content-Security-Policy. Batasi ke mana data boleh dikirim.
      Jika memakai domain Supabase sendiri (bukan *.supabase.co), ganti pada connect-src. Hapus baris ini hanya jika ada fitur yang terblokir. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdnjs.cloudflare.com; script-src-attr 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#1a73c8"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -15,12 +15,7 @@
 </head><body>
 <div id="app" class="pgin"></div><div id="toast" style="opacity: 0;"></div>
 <script id="data" type="application/json">{"orders":[],"seq":0,"nama":"Kasir Laundry","v":2}</script>
-<script>
-/* Penangkap error: jika aplikasi gagal jalan, pesan errornya tampil di layar (bukan layar kosong) */
-(function(){function t(m){try{var d=document.getElementById('klerr');if(!d){d=document.createElement('pre');d.id='klerr';d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:999;margin:0;padding:12px 14px;background:#7f1d1d;color:#fff;font:12px/1.4 monospace;white-space:pre-wrap;max-height:50vh;overflow:auto';(document.body||document.documentElement).appendChild(d)}d.textContent+=m+'\n'}catch(e){}}
-window.addEventListener('error',function(e){t('Error: '+(e.message||'')+' ('+String(e.filename||'').split('/').pop()+':'+(e.lineno||'?')+')')});
-window.addEventListener('unhandledrejection',function(e){t('Error: '+((e.reason&&e.reason.message)||e.reason))})})();
-</script>
+<script src="err.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body></html>
