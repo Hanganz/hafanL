@@ -93,7 +93,7 @@ async function sbBoot(){
 async function sbLanjut(){
   let ada=false;
   try{const t=localStorage.getItem('kl_at');if(t){const d=await sbRpc('kl_akun_sesi',{p_token:t});if(d){sbPasang(d);ada=true}else localStorage.removeItem('kl_at')}}catch(e){}
-  try{const l=bacaKodeUrl()?null:JSON.parse(localStorage.getItem('lc2')||'null');if(l){const r=l.m==='k'?await sbRpc('kl_lacak_kode',{p_kode:l.k}):await sbRpc('kl_lacak_nota',{p_nota:l.n,p_wa4:l.w});if(r&&r.o){sbInject(r.o,r.ctx,r.lim);ada=true}}}catch(e){}
+  try{const l=bacaKodeUrl()?null:JSON.parse(localStorage.getItem('lc2')||'null');if(l){const r=l.m==='k'?await sbRpc('kl_lacak_kode',{p_kode:l.k}):await sbRpc('kl_lacak_nota',{p_nota:l.n,p_wa4:l.w});if(r&&r.o){const x=sbInject(r.o,r.ctx,r.lim);if(x&&l.m==='k')x.lk=l.k;ada=true}}}catch(e){}
   if(ada&&SB_ROLE!=='staf'&&!lcMsg)try{draw()}catch(e){}
 }
 
@@ -210,7 +210,7 @@ async function cari(){
   if(lm==='k'?(k.length<4||k.length>8):!(k&&w.length===4)){found='x';draw();return}
   toast('Mencari…');
   try{const r=lm==='k'?await rpcUlang('kl_lacak_kode',{p_kode:k}):await rpcUlang('kl_lacak_nota',{p_nota:k,p_wa4:w});
-    if(r&&r.o){o=sbInject(r.o,r.ctx,r.lim);try{localStorage.setItem('lc2',JSON.stringify(lm==='k'?{m:'k',k}:{m:'n',n:k,w}));localStorage.setItem('lc',o.id+':'+(lm==='k'?'k:'+k:'w:'+w))}catch(e){}}
+    if(r&&r.o){o=sbInject(r.o,r.ctx,r.lim);if(o&&lm==='k')o.lk=k;try{localStorage.setItem('lc2',JSON.stringify(lm==='k'?{m:'k',k}:{m:'n',n:k,w}));localStorage.setItem('lc',o.id+':'+(lm==='k'?'k:'+k:'w:'+w))}catch(e){}}
   }catch(e){toast(lcErr(e));return}
   found=o||'x';draw()}
 function logoutAcc(){try{localStorage.removeItem('acc');const t=localStorage.getItem('kl_at');localStorage.removeItem('kl_at');if(t&&SB_ROLE!=='staf')sbRpc('kl_akun_keluar',{p_token:t}).catch(()=>{})}catch(e){}if(SB_ROLE!=='staf')sbBersih();cscr='home';draw()}
@@ -1229,7 +1229,7 @@ async function lacakDariUrl(){
   try{draw()}catch(e){}
   try{
     const r=await rpcUlang('kl_lacak_kode',{p_kode:k});
-    if(r&&r.o){const o=sbInject(r.o,r.ctx,r.lim);found=o;lcMsg='';try{localStorage.setItem('lc2',JSON.stringify({m:'k',k}));localStorage.setItem('lc',o.id+':k:'+k)}catch(e){}}
+    if(r&&r.o){const o=sbInject(r.o,r.ctx,r.lim);if(o)o.lk=k;found=o;   /* server mencocokkan kode ini persis, jadi kode order = k (tidak bergantung data lama di server) */lcMsg='';try{localStorage.setItem('lc2',JSON.stringify({m:'k',k}));localStorage.setItem('lc',o.id+':k:'+k)}catch(e){}}
     else{found='x';lcMsg=''}
   }catch(e){found=null;lcMsg=lcErr(e)+' Kode Anda tetap tersimpan di kolom, tekan Lacak Sekarang untuk mencoba lagi.'}
   try{draw()}catch(e){}return true}
