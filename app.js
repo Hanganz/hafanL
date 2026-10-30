@@ -215,7 +215,7 @@ async function cari(){
   found=o||'x';draw()}
 function logoutAcc(){try{localStorage.removeItem('acc');const t=localStorage.getItem('kl_at');localStorage.removeItem('kl_at');if(t&&SB_ROLE!=='staf')sbRpc('kl_akun_keluar',{p_token:t}).catch(()=>{})}catch(e){}if(SB_ROLE!=='staf')sbBersih();cscr='home';draw()}
 function sisa(o){return o.bayar==='Lunas'?'Lunas':o.bayar==='DP'?'Sisa '+rp(o.total-o.dp):'Belum bayar'}
-const DT={baru:`Halo {nama}, cucian Anda sudah kami terima.
+const DT_OLD={baru:`Halo {nama}, cucian Anda sudah kami terima.
 Nota {nota}: {layanan}
 Total {total} ({bayar})
 Estimasi selesai: {estimasi}
@@ -224,6 +224,38 @@ Cek proses: {link}
 - {laundry}`,selesai:`Halo {nama}, cucian Anda (Nota {nota}) sudah SELESAI dan siap diambil.
 Total {total} ({bayar}).
 Terima kasih - {laundry}`,ingat:`Halo {nama}, pengingat dari {laundry}: cucian Anda (Nota {nota}) sudah selesai dan siap diambil. {bayar}. Terima kasih.`,terima:`Terima kasih {nama} sudah mempercayakan cucian Anda kepada {laundry}. Ditunggu kedatangannya kembali.`};
+const DT={baru:`Yth. {nama},
+
+Terima kasih telah mempercayakan cucian Anda kepada {laundry}. Pesanan Anda telah kami terima dengan rincian berikut:
+
+No. Nota: {nota}
+Layanan: {layanan}
+Total: {total} ({bayar})
+Estimasi selesai: {estimasi}
+Kode pelacakan: {kode}
+
+Pantau status cucian Anda di: {link}
+
+Hormat kami,
+{laundry}`,selesai:`Yth. {nama},
+
+Cucian Anda (Nota {nota}) telah selesai diproses dan siap diambil.
+
+Total tagihan: {total} ({bayar})
+
+Silakan datang ke {laundry} pada jam operasional kami. Terima kasih atas kepercayaan Anda.
+
+Hormat kami,
+{laundry}`,ingat:`Yth. {nama},
+
+Kami mengingatkan bahwa cucian Anda (Nota {nota}) sudah selesai dan menunggu untuk diambil. Status pembayaran: {bayar}.
+
+Terima kasih atas perhatian Anda.
+
+Hormat kami,
+{laundry}`,terima:`Terima kasih, {nama}, telah mempercayakan cucian Anda kepada {laundry}. Kepuasan Anda adalah prioritas kami, dan kami menantikan kunjungan Anda kembali.`};
+function tplMig(){if(!S.tpl)return;['baru','selesai','ingat'].forEach(k=>{if(S.tpl[k]===DT_OLD[k])S.tpl[k]=DT[k]})}
+function tplReset(){const a=$('#tb'),b=$('#ts'),d=$('#ti');if(!a||!b||!d)return;a.value=DT.baru;b.value=DT.selesai;d.value=DT.ingat;dirty=true;sbarShow();toast('Template standar dipulihkan. Tekan Simpan untuk menerapkan.')}
 function baseUrl(){const b=(S.base||'').trim();if(b&&!/claude\.ai\/artifact/i.test(b))return b;
   return /^https?:/.test(location.href)?location.origin+location.pathname.replace(/index\.html$/,''):b}
 function fill(k,o){let s=((S.tpl&&S.tpl[k])||DT[k]).split('#{nota}').join('{nota}');if(!baseUrl())s=s.split('\n').filter(l=>!l.includes('{link}')).join('\n');
@@ -371,6 +403,7 @@ function dProses(o){
   <button class="b g" onclick="balik()">← Cek nota lain</button>${foot(o)}</div>`;
   tick(o)}
 const IC={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',lacak:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',harga:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',cs:'<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.2A8 8 0 1 1 21 12z"/>',pin:'<path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>'};
+IC.kel='<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>';
 IC.share='<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>';
 Object.assign(IC,{pend:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',baru:'<path d="M12 5v14M5 12h14"/>',pel:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14a6 6 0 0 1 3 5.5"/>',lap:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'});
 Object.assign(IC,{t1:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM12 11v4l2.5 1.5"/>',t2:'<rect x="4" y="2.5" width="16" height="19" rx="3"/><circle cx="12" cy="13.5" r="4.5"/><path d="M8 6h.01M11 6h.01"/>',t3:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.5L12 12.5l8.7-5M12 22v-9.5"/>',t4:'<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5"/><circle cx="16" cy="14.5" r="1"/>',t5:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M4 5L2 7M20 5l2 2"/>',t6:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/>'});
@@ -472,7 +505,7 @@ let PO=[],_poSeen=null,_poBusy=false;const _poTitle=document.title;
 function bunyi(){try{const c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(.15,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.start();o.stop(c.currentTime+.5)}catch(e){}try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}}
 function poInner(){const L=PO.filter(x=>x.status==='baru');if(!L.length)return '';
   return `<div class="card po"><h2>🛒 Pesanan online (${L.length})</h2>${L.map(p=>`<div class="pop"><div class="row" style="gap:8px"><b>${esc(p.nama)}</b><b>${rp(p.total)}</b></div><div style="font-size:13.5px;margin:2px 0">${p.items.map(x=>esc(x.n)+' ×'+x.q).join(', ')}</div><div class="mut" style="font-size:12.5px">${p.mode==='antar'?'🛵 Antar: '+esc(p.alamat||'-'):'🏪 Ambil di toko'}${p.wa?' · '+esc(p.wa):''}${p.bayar==='qris'?' · QRIS ref '+esc(p.ref||'-'):' · Bayar nanti'} · ${fx(p.d)}</div><div class="qa"><button class="b" style="margin:8px 8px 0 0" onclick="poTerima(${p.id})">Terima</button><button class="b g" style="margin:8px 0 0" onclick="poTolak(${p.id})">Tolak</button></div></div>`).join('')}</div>`}
-function stokCard(){const L=(S.prd||[]).filter(p=>p.on!==0&&p.st!=null&&p.st<=3);if(!L.length)return '';return `<div class="card full stk"><h2>📦 Stok produk menipis</h2>${L.map(p=>`<div class="row"><span>${esc(p.n)}</span><b style="color:${p.st<=0?'var(--bad)':'#f97316'}">${p.st<=0?'Habis':'Sisa '+p.st}</b></div>`).join('')}<button class="b g" style="margin:10px 0 0" onclick="nvA('set')">Atur stok</button></div>`}
+function stokCard(){const L=(S.prd||[]).filter(p=>p.on!==0&&p.st!=null&&p.st<=3);if(!L.length)return '';return `<div class="card full stk"><h2>📦 Stok produk menipis</h2>${L.map(p=>`<div class="row"><span>${esc(p.n)}</span><b style="color:${p.st<=0?'var(--bad)':'#f97316'}">${p.st<=0?'Habis':'Sisa '+p.st}</b></div>`).join('')}<button class="b g" style="margin:10px 0 0" onclick="kelolaOpen('Produk')">Kelola stok</button></div>`}
 function poCard(){return `<div id="pow" class="full">${poInner()}</div>`}
 function poRef(){const e=$('#pow');if(e)e.innerHTML=poInner();const n=PO.filter(x=>x.status==='baru').length;document.title=(n?'('+n+') ':'')+_poTitle}
 async function poMuat(){if(_poBusy||!adm||SB_ROLE!=='staf')return;_poBusy=true;
@@ -643,7 +676,7 @@ function dAdm(){
     <div class="card"><h2>Jam operasional &amp; FAQ</h2><label>Jam buka</label><input id="jb" type="time" value="${esc((S.ops||{}).b)}"><label>Jam tutup</label><input id="jt" type="time" value="${esc((S.ops||{}).t)}"><label>Hari buka</label><div>${['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map((d,i)=>`<button class="chp ${((S.ops&&S.ops.h)||[1,2,3,4,5,6]).includes(i)?'on':''}" onclick="hari(${i})">${d}</button>`).join('')}</div>
     <label>FAQ (satu per baris, format: Pertanyaan | Jawaban)</label><textarea id="sf" placeholder="Apakah ada garansi? | Ada, klaim maksimal 1x24 jam.">${esc(S.faq)}</textarea></div>
     <div class="card"><h2>Template pesan WA</h2><p class="mut">Kode yang bisa dipakai: {nama} {nota} {layanan} {total} {bayar} {estimasi} {link} {laundry}</p>
-    <label>Order diterima</label><textarea id="tb">${esc((S.tpl&&S.tpl.baru)||DT.baru)}</textarea><label>Cucian selesai</label><textarea id="ts">${esc((S.tpl&&S.tpl.selesai)||DT.selesai)}</textarea><label>Pengingat belum diambil</label><textarea id="ti">${esc((S.tpl&&S.tpl.ingat)||DT.ingat)}</textarea></div>
+    <label>Order diterima</label><textarea id="tb">${esc((S.tpl&&S.tpl.baru)||DT.baru)}</textarea><label>Cucian selesai</label><textarea id="ts">${esc((S.tpl&&S.tpl.selesai)||DT.selesai)}</textarea><label>Pengingat belum diambil</label><textarea id="ti">${esc((S.tpl&&S.tpl.ingat)||DT.ingat)}</textarea><button class="b g" style="margin:10px 0 0" onclick="tplReset()">Pulihkan template standar</button></div>
     ${btCard()}
     <div class="card"><h2>WA otomatis (Fonnte)</h2><p class="mut">Pesan dikirim ke pelanggan tanpa perlu klik. Butuh akun Fonnte dan fungsi kirim-wa di Supabase (lihat PANDUAN-FONNTE.md). Pesan memakai Template pesan WA di atas.</p>
     <label class="chk"><input type="checkbox" id="wao" ${(S.wa||{}).on?'checked':''}> Aktifkan WA otomatis</label>
@@ -658,7 +691,7 @@ function dAdm(){
     <label>Link halaman ini (untuk pelanggan, tempel dari tombol bagikan)</label>
     <input id="sb" value="${esc(S.base)}"><label>No. WA admin (penerima kode pendaftaran pelanggan)</label><input id="sno" inputmode="tel" value="${esc(S.admNo)}" placeholder="08123456789"><button class="b g" onclick="cadang()">Unduh cadangan (CSV)</button><button class="b g" onclick="cadangJson()">Cadangan lengkap (JSON)</button><label class="b g" style="cursor:pointer">Pulihkan dari JSON<input type="file" accept=".json,application/json" style="display:none" onchange="pulihJson(this)"></label><button class="b g" onclick="ask('Perkecil kualitas foto poster, banner, dan logo supaya penyimpanan lebih cepat? Foto menjadi sedikit kurang tajam.',()=>kecilkan(),'Perkecil')">Perkecil ukuran gambar</button></div></div>`;
   if(tab==='home'&&ban){body=body.replace('<div class="gp ag">',ban+'<div class="gp ag">');ban=''}
-  $('#app').innerHTML=`${(tab==='home'||tab==='det'||tab==='hut')?'':`<div class="abar"><div><b>${TT[tab==='riw'?'pend':tab]}</b><small>${esc(me()||'Admin')}</small></div><span class="abr">${thSw()}<button class="lgb" style="margin:0" onclick="askOut()">Keluar</button></span></div>`}${ban}${body}${payHtml()}${tuHtml()}${okHtml()}`;
+  $('#app').innerHTML=`${(tab==='home'||tab==='det'||tab==='hut')?'':`<div class="abar"><div><b>${(tab==='set'&&setGrp==='kel')?'Kelola':TT[tab==='riw'?'pend':tab]}</b><small>${esc(me()||'Admin')}</small></div><span class="abr">${thSw()}<button class="lgb" style="margin:0" onclick="askOut()">Keluar</button></span></div>`}${ban}${body}${payHtml()}${tuHtml()}${okHtml()}`;
   $('#app').insertAdjacentHTML('beforeend',admNav());if(pid)updKem();if(tab==='set')tidyAtur();
   if(tab==='baru'){if(ed)isiEdit();else{estAuto();drawLines()}}
 }
@@ -941,7 +974,7 @@ function hitK(){const s=$('#ks'),r=$('#kr');if(!s||!r)return;const v=SV[s.value]
 const TT={home:'',pend:'Order',baru:'Order Baru',pel:'Pelanggan',lap:'Laporan',set:'Pengaturan',dat:'Pusat Data',det:'Detail Pesanan',hut:'Bayar Hutang'};
 function admNav(){const all=[['home','Beranda'],['pend','Order'],['baru','Baru'],['pel','Pelanggan'],['lap','Laporan'],['set','Atur']].filter(x=>owner()||(x[0]!=='lap'&&x[0]!=='set')),act=k=>tab===k||(k==='pend'&&(tab==='riw'||tab==='det'))||(k==='set'&&tab==='dat')||(k==='pel'&&tab==='hut');
   return `<nav class="nv adm">${all.map(([k,l])=>`<button class="${act(k)?'on':''}${k==='baru'?' plus':''}" onclick="nvA('${k}')" aria-label="${l}">${svg(k)}<span>${l}</span></button>`).join('')}</nav>`}
-function nvA(k){mnId=null;if(k==='baru'){ln=[];feT=false;vcOn=0;dsel=[];dman=0;cuSelWa=''}if(!owner()&&(k==='lap'||k==='set'||k==='dat'))return;tab=k;ed=null;delId=null;q='';fl='';draw();try{window.scrollTo(0,0)}catch(e){}}
+function nvA(k){if(k==='set'){if(!_kel){setGrp='set';setSec=''}_kel=0}mnId=null;if(k==='baru'){ln=[];feT=false;vcOn=0;dsel=[];dman=0;cuSelWa=''}if(!owner()&&(k==='lap'||k==='set'||k==='dat'))return;tab=k;ed=null;delId=null;q='';fl='';draw();try{window.scrollTo(0,0)}catch(e){}}
 function seg(){return `<div class="seg"><button class="${tab==='pend'?'on':''}" onclick="tab='pend';q='';fl='';draw()">Pending</button><button class="${tab==='riw'?'on':''}" onclick="tab='riw';q='';fl='';draw()">Riwayat</button></div>`}
 function uangMasuk(a,b){let s=0;S.orders.forEach(o=>(o.pay||legacy(o)).forEach(p=>{if(p.t>=a&&p.t<b&&p.m!=='Saldo')s+=p.a}));(S.tu||[]).forEach(x=>{if(x.t>=a&&x.t<b&&x.m!=='Saldo')s+=x.a});return s}
 function nilaiOrder(a,b){return S.orders.filter(o=>o.st!==4&&o.masuk>=a&&o.masuk<b).reduce((s,o)=>s+o.total,0)}
@@ -958,7 +991,7 @@ function dDash(){
   const kp2=kp.filter(x=>x[0]!=='Order hari ini'),logo=S.logo?`<img class="lg lgs" style="margin:0;width:38px;height:38px;flex:none" src="${esc(S.logo)}" alt="">`:'';
   const ico=(c,k,l,act,bd)=>`<button class="gi" style="--c:${c}" onclick="${act}"><span class="gic">${svg(k)}${bd?`<i class="bdg">${bd}</i>`:''}</span><span>${l}</span></button>`;
   const hutN=hutList().length,pend=O.filter(o=>o.st<3).length;
-  const menu=[ico('#2f7de1','baru','Order Baru',"nvA('baru')"),ico('#0e9aa7','pend','Order',"nvA('pend')",pend||''),ico('#f08a24','toko','Jual',"jualOpen()"),ico('#7c5cd6','pel','Pelanggan',"nvA('pel')"),ico('#d64545','harga','Hutang',"nvH()",hutN||''),ico('#1e9e5a','lap','Laporan',"nvA('lap')"),...(owner()?[`<a class="gi" style="--c:#d6548e" target="_blank" rel="noopener" href="${rekapUrl()}"><span class="gic">${svg('share')}</span><span>Rekap</span></a>`,ico('#5b6b82','info','Data',"nvA('dat')")]:[])].join('');
+  const menu=[ico('#2f7de1','baru','Order Baru',"nvA('baru')"),ico('#0e9aa7','pend','Order',"nvA('pend')",pend||''),ico('#f08a24','toko','Jual',"jualOpen()"),ico('#7c5cd6','pel','Pelanggan',"nvA('pel')"),ico('#d64545','harga','Hutang',"nvH()",hutN||''),ico('#1e9e5a','lap','Laporan',"nvA('lap')"),...(owner()?[`<a class="gi" style="--c:#d6548e" target="_blank" rel="noopener" href="${rekapUrl()}"><span class="gic">${svg('share')}</span><span>Rekap</span></a>`,ico('#5b6b82','info','Data',"nvA('dat')"),ico('#8a6d3b','kel','Kelola',"kelolaOpen()")]:[])].join('');
   const sc=[['antri','Antrian','#3b82f6'],['proses','Proses','#f59e0b'],['siap','Siap Ambil','#10b981'],['antar','Siap Antar','#8b5cf6'],['dead','Deadline','#f97316'],['telat','Terlambat','#ef4444']];
   return `<div class="ah"><div class="ahr"><div class="hdl">${logo}<div><small>${n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'})}</small><b>${esc(S.nama)}</b></div></div><div class="hdr">${thSw()}<button class="lgb" style="margin:0" onclick="askOut()">Keluar</button></div></div><div class="ahs">${sal}${me()?', '+esc(me()):''}. ${msg}</div></div>
   <div class="sm" style="--n:${kp2.length}">${kp2.map(([l,v,k,c])=>`<div class="smc" onclick="${k}"><small>${l}</small><b${c?` style="color:${c}"`:''}>${v}</b></div>`).join('')}${hari.length?`<div class="smp"><div class="hpl"><span>Selesai hari ini</span><b>${done} dari ${hari.length} order</b></div><div class="bar2"><i style="width:${pct}%"></i></div></div>`:''}</div>
@@ -1083,15 +1116,38 @@ async function tesGen(){const n=$('#tn2').value.trim(),x=$('#tt2').value.trim();
 function rtUrl(o){const p=S.pm||{};if(!p.cs)return '';return 'https://wa.me/'+nomor(p.cs)+'?text='+encodeURIComponent('Halo '+S.nama+', saya '+o.nama+' (Nota '+nn(o)+') ingin memberi ulasan.\nBintang: '+(rt.n?'★'.repeat(rt.n)+' ('+rt.n+'/5)':'-')+'\nKomentar: '+rt.c)}
 function rtStar(n){rt.n=n;draw()}
 function rtIn(v,id){rt.c=v;const a=$('#rtA'),o=S.orders.find(x=>x.id===id);if(a&&o)a.href=rtUrl(o)}
-function rateCard(o){const u=revUrl(),w=rtUrl(o);
-  return `<div class="card" style="text-align:center"><h2>Bagaimana layanan kami?</h2><div class="stars">${[1,2,3,4,5].map(n=>`<a style="${n<=rt.n?'':'opacity:.35'}" onclick="rtStar(${n})" role="button" aria-label="${n} bintang">★</a>`).join('')}</div><textarea placeholder="Tulis komentar Anda (opsional)" oninput="rtIn(this.value,${o.id})" style="margin-top:10px">${esc(rt.c)}</textarea>${w?`<a id="rtA" class="b" style="display:block;text-align:center;margin:10px 0 0" target="_blank" rel="noopener" href="${w}">Kirim ulasan ke CS (WA)</a>`:''}${u?`<a class="b g" style="display:block;text-align:center;margin:8px 0 0" target="_blank" rel="noopener" href="${esc(u)}">Tulis di Google Maps</a>`:''}</div>`}
+const RTL=['','Kurang puas','Cukup','Baik','Puas','Sangat puas'];
+async function rtKirim(id){const o=S.orders.find(x=>x.id===id);if(!o||rt.busy)return;
+  if(!rt.n){toast('Pilih jumlah bintang terlebih dahulu');return}
+  const cm=(rt.c||'').trim();if(cm.length<3){toast('Tulis komentar singkat (minimal 3 huruf)');return}
+  const w=String(o.nama||'Pelanggan').trim().split(/\s+/),nm=w[0]+(w[1]?' '+w[1].charAt(0).toUpperCase()+'.':'');
+  rt.busy=1;draw();
+  try{await sbRpc('kl_tes_kirim',{p_n:nm.slice(0,60),p_b:rt.n,p_t:cm.slice(0,400)});rt.done=1;try{localStorage.setItem('rv'+id,'1')}catch(e){}}
+  catch(e){const m=String(e&&e.message||'');toast(/TERLALU_(SERING|BANYAK)/.test(m)?'Terlalu banyak ulasan masuk, coba lagi nanti':'Gagal mengirim, periksa koneksi lalu coba lagi')}
+  finally{rt.busy=0;draw()}}
+function rateCard(o){const u=revUrl(),w=rtUrl(o);let dn=rt.done;try{dn=dn||localStorage.getItem('rv'+o.id)}catch(e){}
+  const gm=u?`<a class="rvk" target="_blank" rel="noopener" href="${esc(u)}">Tulis juga di Google Maps</a>`:'';
+  if(dn)return `<div class="card rv" style="text-align:center"><div class="okc">✓</div><h2 style="margin:10px 0 6px">Terima kasih atas ulasan Anda</h2><p class="mut" style="margin:0">Masukan Anda membantu kami meningkatkan layanan. Ulasan akan tampil setelah ditinjau tim kami.</p>${gm}</div>`;
+  return `<div class="card rv" style="text-align:center"><h2>Bagaimana pengalaman Anda?</h2><p class="mut" style="margin:0 0 6px">Penilaian Anda membantu kami melayani dengan lebih baik.</p><div class="stars rvs">${[1,2,3,4,5].map(n=>`<a class="${n<=rt.n?'on':''}" onclick="rtStar(${n})" role="button" aria-label="${n} bintang">★</a>`).join('')}</div><div class="rvl">${rt.n?RTL[rt.n]:'Ketuk bintang untuk menilai'}</div><textarea placeholder="Tulis komentar Anda" oninput="rtIn(this.value,${o.id})">${esc(rt.c)}</textarea><button class="b" style="width:100%;margin:12px 0 0"${rt.busy?' disabled':''} onclick="rtKirim(${o.id})">${rt.busy?'Mengirim…':'Kirim ulasan'}</button>${gm}${w?`<a id="rtA" class="rvk" target="_blank" rel="noopener" href="${w}">Hubungi kami lewat WhatsApp</a>`:''}</div>`}
 function riwCard(o){const k=nw(o.wa),a=S.orders.filter(x=>nw(x.wa)===k&&x.id!==o.id).slice(-4).reverse(),sl=(S.sal&&S.sal[k])||0;if(!a.length&&!sl)return '';
   return `<div class="card"><h2>Riwayat cucian Anda</h2>${sl>0?`<div class="row" style="padding:4px 0"><span class="mut">Saldo</span><b>${rp(sl)}</b></div>`:''}${a.map(x=>`<div class="row" style="padding:6px 0;border-top:1px solid var(--bd)"><span>${nn(x)} <span class="mut">· ${fmt(x.masuk)} · ${STN[x.st]}</span></span><button class="b g" style="margin:0;padding:6px 12px" onclick="found=S.orders.find(z=>z.id===${x.id});draw()">Lihat</button></div>`).join('')}</div>`}
 const ATUR_AI={'Toko & Akses':['🏪','Nama laundry, PIN, batas hari, cadangan'],'Layanan & Harga':['🧺','Daftar layanan dan harganya'],'Diskon':['🏷️','Diskon yang bisa dipilih kasir'],'Produk':['🛍️','Barang yang dijual, mis. plastik dan parfum'],'Mutasi Bank':['🏦','Catat pembayaran otomatis dari mutasi'],'Pembayaran & QRIS':['💳','QRIS dan pembayaran'],'Tampilan pelanggan':['🎨','Warna, logo, banner, pesan status'],'Popup poster promo':['📣','Poster saat pelanggan membuka'],'Karyawan':['👥','Akun, PIN, impor Excel'],'Jam operasional & FAQ':['🕒','Jam buka dan pertanyaan umum'],'Template pesan WA':['💬','Isi pesan ke pelanggan'],'WA otomatis (Fonnte)':['🤖','Kirim WA ke pelanggan tanpa klik']};
 function sbarShow(){if(document.getElementById('sbar'))return;$('#app').insertAdjacentHTML('beforeend','<div class="sbar" id="sbar"><span>Ada perubahan belum disimpan</span><button class="b" onclick="atur()">Simpan</button></div>')}
+let setGrp='set',setSec='',_kel=0;
+const ATUR_GRP={set:['Toko & Akses','Layanan & Harga','Pembayaran & QRIS','Karyawan','Tampilan pelanggan','Template pesan WA','WA otomatis (Fonnte)'],kel:['Produk','Diskon','Mutasi Bank','Popup poster promo','Jam operasional & FAQ']};
+const ATUR_IC={'Toko & Akses':['🏪','#2f7de1','Toko'],'Layanan & Harga':['🧺','#0e9aa7','Layanan'],'Pembayaran & QRIS':['💳','#1e9e5a','Pembayaran'],'Karyawan':['👥','#7c5cd6','Karyawan'],'Tampilan pelanggan':['🎨','#d6548e','Tampilan'],'Template pesan WA':['💬','#25a55f','Pesan WA'],'WA otomatis (Fonnte)':['🤖','#f08a24','WA Otomatis'],'Produk':['📦','#d98a1f','Stok & Produk'],'Diskon':['🏷️','#d64545','Diskon'],'Mutasi Bank':['🏦','#3b82f6','Mutasi Bank'],'Popup poster promo':['📣','#8b5cf6','Poster Promo'],'Jam operasional & FAQ':['🕒','#5b6b82','Jam & FAQ']};
+function kelolaOpen(sec){setGrp='kel';setSec=sec||'';_kel=1;nvA('set')}
+function atGrp(g){if(dirty)bacaSv();setGrp=g;setSec='';draw()}
+function atSec(n){setSec=n||'';atApply();window.scrollTo(0,0)}
+function atApply(){const g=document.querySelector('#app .acl');if(!g)return;g.querySelectorAll('.atc').forEach(c=>{c.style.display=(c.dataset.sec===setSec)?'':'none'});const b=g.querySelector('#atb'),gr=g.querySelector('.atgrid'),h=g.querySelector('.ath');if(b)b.style.display=setSec?'':'none';if(gr)gr.style.display=setSec?'none':'';if(h)h.style.display=setSec?'none':''}
 function tidyAtur(){const g=document.querySelector('#app .gr.two');if(!g)return;g.classList.remove('two','gr');g.classList.add('acl');
-  const ord=['Toko & Akses','Layanan & Harga','Produk','Diskon','Pembayaran & QRIS','Mutasi Bank','Tampilan pelanggan','Popup poster promo','Karyawan','Jam operasional & FAQ','Template pesan WA','WA otomatis (Fonnte)'],nm=c=>{const h=c.querySelector('h2');return h?h.textContent:''};
-  [...g.children].sort((a,b)=>{const x=ord.indexOf(nm(a)),y=ord.indexOf(nm(b));return (x<0?99:x)-(y<0?99:y)}).forEach((c,i)=>{const h=c.querySelector('h2');if(!h)return;const n=h.textContent,d=document.createElement('details'),s=document.createElement('summary');d.className='card ac';if(acOpen[n]||(!Object.keys(acOpen).length&&i===0))d.open=true;{const m=ATUR_AI[n]||['⚙️',''];s.innerHTML=`<span class="ai">${m[0]}</span><span class="at"><b>${esc(n)}</b>${m[1]?`<small>${m[1]}</small>`:''}</span>`}h.remove();d.appendChild(s);while(c.firstChild)d.appendChild(c.firstChild);d.addEventListener('toggle',()=>{acOpen[n]=d.open});g.appendChild(d);c.remove()});g.insertAdjacentHTML('beforeend',`<div class="card" style="margin-top:14px">${dirty?'<p style="color:var(--warn);margin:0 0 10px">⚠ Ada perubahan yang belum disimpan.</p>':'<p class="mut" style="margin:0 0 10px">Tidak ada perubahan yang tertunda.</p>'}<button class="b" style="width:100%;margin:0" onclick="atur()">Simpan Semua Perubahan</button><p class="mut" style="margin:10px 0 0;text-align:center">Ukuran data halaman: ${Math.round(JSON.stringify(S).length/1024)} KB dari batas 16.000 KB</p><button class="b g" style="width:100%;margin:12px 0 0;color:var(--bad);border-color:var(--bad)" onclick="askOut()">Keluar dari akun</button></div>`);if(dirty)sbarShow()}
+  const nm=c=>{const h=c.querySelector('h2');return h?h.textContent:''},grp=ATUR_GRP[setGrp]||ATUR_GRP.set;
+  [...g.children].forEach(c=>{const n=nm(c);if(!n)return;c.classList.add('atc');c.dataset.sec=n});
+  const tl=grp.map(n=>{const m=ATUR_IC[n]||['⚙️','#5b6b82',n];return `<button class="gi" style="--c:${m[1]}" data-n="${esc(n)}" onclick="atSec(this.dataset.n)"><span class="gic atg">${m[0]}</span><span>${esc(m[2])}</span></button>`}).join('');
+  const kel=setGrp==='kel';
+  g.insertAdjacentHTML('afterbegin',`<div class="ath"><small>${kel?'Stok, diskon, promo, dan info toko':'Hal-hal penting saja. Stok, diskon, dan promo ada di Kelola'}</small></div><div class="gp ag atgrid">${tl}<button class="gi" style="--c:#5b6b82" onclick="atGrp('${kel?'set':'kel'}')"><span class="gic atg">${kel?'⚙️':'🧰'}</span><span>${kel?'Pengaturan':'Kelola'}</span></button></div><div id="atb"><button class="b g" style="margin:0 0 4px" onclick="atSec('')">← ${kel?'Menu Kelola':'Semua pengaturan'}</button></div>`);
+  g.insertAdjacentHTML('beforeend',`<div class="card atsv" style="margin-top:14px">${dirty?'<p style="color:var(--warn);margin:0 0 10px">⚠ Ada perubahan yang belum disimpan.</p>':'<p class="mut" style="margin:0 0 10px">Tidak ada perubahan yang tertunda.</p>'}<button class="b" style="width:100%;margin:0" onclick="atur()">Simpan Semua Perubahan</button><p class="mut" style="margin:10px 0 0;text-align:center">Ukuran data halaman: ${Math.round(JSON.stringify(S).length/1024)} KB dari batas 16.000 KB</p><button class="b g" style="width:100%;margin:12px 0 0;color:var(--bad);border-color:var(--bad)" onclick="askOut()">Keluar dari akun</button></div>`);
+  atApply();if(dirty)sbarShow()}
 const fx=x=>new Date(x).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
 function ordRows(){return S.orders.map(o=>({Nota:o.no||o.id,Tanggal:fx(o.masuk),Pelanggan:o.nama,WA:wShow(o.wa),Layanan:itemsTxt(o),Diskon:o.disk||0,Total:o.total,Dibayar:o.total-tagih(o),Sisa:tagih(o),Status:STN[o.st],Pembayaran:o.bayar,PJ:o.pj||'',Catatan:o.cat||'',Estimasi:fx(o.est)}))}
 function pelRows(){return pelList().map(c=>({Nama:c.nama,WA:c.wa,'Jumlah order':c.c,'Total belanja':c.t,Terakhir:fx(c.l),Poin:poin(c.wa),Saldo:(S.sal&&S.sal[c.k])||0,Hutang:S.orders.filter(o=>nw(o.wa)===c.k&&o.st===3&&tagih(o)>0).reduce((s,o)=>s+tagih(o),0)}))}
@@ -1169,7 +1225,7 @@ async function waFlush(){if(!_waQ.length)return;const q=_waQ.splice(0);for(const
   const r=await waKirim(nomor(o.wa),fill(x.k==='selesai'?'selesai':'baru',o));
   if(r.ok){sentSet(x.key);toast('WA terkirim ke '+o.nama)}else toast('WA otomatis gagal: '+r.msg+'. Kirim manual lewat tombol Kirim WA.')}}
 async function waTes(){const v=($('#wat')||{}).value||'';const n=nomor(v);if(!/^62\d{8,13}$/.test(n)){toast('Isi nomor tujuan tes, mis. 08123456789');return}
-  toast('Mengirim pesan tes…');const r=await waKirim(n,'Tes WA otomatis dari '+S.nama+'. Jika pesan ini masuk, pengiriman otomatis sudah aktif.',true);
+  toast('Mengirim pesan tes…');const r=await waKirim(n,'Pesan uji dari '+S.nama+'. Apabila Anda menerima pesan ini, layanan WhatsApp otomatis telah aktif dan berfungsi dengan baik.',true);
   toast(r.ok?'Pesan tes terkirim. Cek WhatsApp di nomor itu.':'Gagal: '+r.msg)}
 function sentGet(){try{return JSON.parse(localStorage.getItem('snt')||'{}')}catch(e){return {}}}
 function wkAda(o,k){return !!((o.wk&&o.wk[k])||sentGet()[o.id+':'+k])}
@@ -1237,7 +1293,7 @@ window.addEventListener('hashchange',()=>{lacakDariUrl()});
 function ukur(){return Math.round(JSON.stringify(S).length/1024)}
 function reimg(u,w,h,q){return new Promise(res=>{if(!u||String(u).indexOf('data:image')!==0){res(u);return}const im=new Image();im.onload=()=>{const k=Math.min(1,w/im.width,h/im.height),cw=Math.max(1,Math.round(im.width*k)),ch=Math.max(1,Math.round(im.height*k)),c=document.createElement('canvas');c.width=cw;c.height=ch;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cw,ch);g.drawImage(im,0,0,cw,ch);let o=c.toDataURL('image/webp',q);if(o.indexOf('data:image/webp')!==0)o=c.toDataURL('image/jpeg',q);res(o.length<u.length?o:u)};im.onerror=()=>res(u);im.src=u})}
 async function kecilkan(){toast('Memperkecil gambar...');const b=ukur();S.logo=await reimg(S.logo,128,128,.8);if(S.pop&&S.pop.img)S.pop.img=await reimg(S.pop.img,560,700,.6);if(S.promo)S.promo=await Promise.all(S.promo.map(u=>reimg(u,560,245,.6)));if(S.prd)for(const p of S.prd){if(p.img){p.img=await reimg(p.img,240,240,.6);SV[p.k]=p}}dirty=true;const a=ukur();draw();ask('Ukuran data turun dari '+b+' KB menjadi '+a+' KB. Simpan sekarang?',()=>atur2(),'Simpan')}
-document.addEventListener('input',e=>{if(tab==='set'&&e.target&&e.target.closest&&e.target.closest('.ac')&&!dirty){dirty=true;sbarShow()}});
+document.addEventListener('input',e=>{if(tab==='set'&&e.target&&e.target.closest&&e.target.closest('.ac,.atc')&&!dirty){dirty=true;sbarShow()}});
 function bkRaw(){try{const b=JSON.parse(localStorage.getItem('kl_bk')||'null');return (b&&b.data&&Array.isArray(b.data.orders)&&b.stamp>(S.stamp||0))?b:null}catch(e){return null}}
 /* cadangan hanya boleh dipulihkan jika dibuat dari versi server yang SAMA (atau tepat sebelum simpanan yang berhasil) */
 function bkLocal(){const b=bkRaw();if(!b)return null;if(SB_ROLE!=='staf')return null;
@@ -1363,7 +1419,7 @@ function stokMap(items){const m={};(items||[]).forEach(x=>{const v=SV[x.sv];if(v
 function stokCek(it,old){const n=stokMap(it),o=stokMap(old);for(const k in n){const s=(SV[k].st||0)+(o[k]||0);if(n[k]>s)return SV[k].n+' hanya tersisa '+s}return ''}
 function stokGeser(items,sg){const m=stokMap(items);for(const k in m)SV[k].st=Math.max(0,(SV[k].st||0)+sg*m[k])}
 function umumWa(){let c=(S.cu||[]).find(x=>x.wa==='620000000000');if(!c)(S.cu=S.cu||[]).push(c={nama:'Pelanggan Umum',wa:'620000000000',alamat:'',cat:'',blok:0,t:Date.now(),kd:nextKd()});return c.wa}
-function jualOpen(){if(!S.prd.some(p=>p.on!==0)){toast('Belum ada produk. Tambahkan di Atur → Produk.');if(owner())nvA('set');return}nvA('baru');setTimeout(()=>openPk('Produk'),60)}
+function jualOpen(){if(!S.prd.some(p=>p.on!==0)){toast('Belum ada produk. Tambahkan di Kelola → Stok & Produk.');if(owner())kelolaOpen('Produk');return}nvA('baru');setTimeout(()=>openPk('Produk'),60)}
 function tambahPrd(n){bacaSv();S.prd.push({k:'p'+Date.now().toString(36),n:n||'Produk baru',h:0,u:'pcs',j:0,on:1,p:1,st:null});S.prd.forEach(p=>{SV[p.k]=p});draw()}
 function togPrd(i){bacaSv();S.prd[i].on=S.prd[i].on===0?1:0;draw()}
 function hapusPrd(i){const p=S.prd[i];if(!p)return;if(S.orders.some(o=>items(o).some(x=>x.sv===p.k))){toast('Produk ini sudah dipakai di order. Nonaktifkan saja.');return}ask('Hapus produk "'+p.n+'"?',()=>{bacaSv();delete SV[p.k];S.prd.splice(i,1);draw()},'Hapus')}
@@ -1374,7 +1430,7 @@ function draw(){const sh=document.querySelector('.sheet:not(#pk)'),st=sh?sh.scro
   if(ch){document.body.classList.remove('nvh');const a=document.getElementById('app');if(a){a.classList.remove('pgin');void a.offsetWidth;a.classList.add('pgin')}}
   try{window.scrollTo(0,ch?0:wy)}catch(e){}
   setTimeout(tsInit,60)}
-function backfill(){['sal','tebus'].forEach(f=>{if(!S[f])return;const n={};Object.keys(S[f]).forEach(k=>{const nk=nw(k);n[nk]=(n[nk]||0)+S[f][k]});S[f]=n});(S.tu||[]).forEach(x=>{x.k=nw(x.k)});
+function backfill(){tplMig();['sal','tebus'].forEach(f=>{if(!S[f])return;const n={};Object.keys(S[f]).forEach(k=>{const nk=nw(k);n[nk]=(n[nk]||0)+S[f][k]});S[f]=n});(S.tu||[]).forEach(x=>{x.k=nw(x.k)});
   [...S.orders].sort((a,b)=>a.id-b.id).forEach(o=>{if(!o.no)o.no=newNo(o.masuk)});migrate()}
 function splash(){if(adm)return;const d=document.createElement('div');d.id='spl';d.innerHTML=`${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<b>${esc(S.nama)}</b>`;document.body.appendChild(d);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),450)},800)}
 
