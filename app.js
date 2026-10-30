@@ -100,7 +100,7 @@ async function sbLanjut(){
 /* ---- sisi STAF: proyeksi data publik (dikirim bersama simpan) ---- */
 function kKey(w){const k=nw(w);if(!S.ksl)S.ksl=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
   return '9'+(String(h32(S.ksl+'|'+k+'|a')).padStart(10,'0')+String(h32(S.ksl+'|'+k+'|b')).padStart(10,'0')).slice(0,12)}
-const SB_KEEP=['id','no','nama','jb','jem','ant','jj','ja','sv','qty','hs','total','disk','dn','cat','masuk','est','sel','st','bayar','dp','met','vc','jual'];
+const SB_KEEP=['id','no','lk','nama','jb','jem','ant','jj','ja','sv','qty','hs','total','disk','dn','cat','masuk','est','sel','st','bayar','dp','met','vc','jual'];
 function pubO(o,k,lim){const x={};SB_KEEP.forEach(f=>{if(o[f]!==undefined)x[f]=o[f]});x.wa=k;
   if(o.it)x.it=o.it.map(i=>Object.assign({},i));
   if(o.pay)x.pay=o.pay.map(p=>({t:p.t,a:p.a,m:p.m}));
@@ -207,7 +207,7 @@ async function rpcUlang(fn,args){try{return await sbRpc(fn,args)}catch(e){if(e&&
 async function cari(){
   lcPre='';lcMsg='';if(SB_ROLE==='staf')return cariStaf();
   const k=($('#ck').value||'').trim().toUpperCase().replace(/\s+/g,''),w=dig($('#cw')?$('#cw').value:'');let o=null;
-  if(lm==='k'?k.length!==6:!(k&&w.length===4)){found='x';draw();return}
+  if(lm==='k'?(k.length<4||k.length>8):!(k&&w.length===4)){found='x';draw();return}
   toast('Mencari…');
   try{const r=lm==='k'?await rpcUlang('kl_lacak_kode',{p_kode:k}):await rpcUlang('kl_lacak_nota',{p_nota:k,p_wa4:w});
     if(r&&r.o){o=sbInject(r.o,r.ctx,r.lim);try{localStorage.setItem('lc2',JSON.stringify(lm==='k'?{m:'k',k}:{m:'n',n:k,w}));localStorage.setItem('lc',o.id+':'+(lm==='k'?'k:'+k:'w:'+w))}catch(e){}}
@@ -1216,7 +1216,7 @@ function kdHtml(w){const c=cuOf(w);if(!c||!c.kd)return '';const n=+c.kd.replace(
 let lcPre='',lcMsg='';
 function bacaKodeUrl(){let h=location.hash||'',qs=location.search||'';
   try{h=decodeURIComponent(h)}catch(e){}
-  const m=(h+'&'+qs).match(/lacak[=\/:]([A-Za-z0-9]{4,8})/i)||h.match(/^#\/?([A-Za-z0-9]{6})$/);
+  const m=(h+'&'+qs).match(/lacak[=\/:]([A-Za-z0-9]{4,8})/i)||h.match(/^#\/?([A-Za-z0-9]{6,8})$/);
   return m?m[1].toUpperCase():''}
 /* Hapus kode dari address bar saat pengguna pindah dari layar Lacak, supaya refresh tidak melempar balik ke hasil lama. */
 function bersihHash(){try{if(bacaKodeUrl())history.replaceState(history.state,'',location.pathname)}catch(e){}}
