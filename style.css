@@ -494,3 +494,15 @@ details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 .ath{padding:2px 4px 4px}.ath b{display:block;font-size:20px;font-weight:800;letter-spacing:-.2px}.ath small{color:var(--mut);font-size:13px}
 .atg{font-size:27px;line-height:1}
 .atgrid{margin:10px 0 14px}
+
+/* ===== v1.1.6: kotak menu lebih besar dan rapi (beranda + pengaturan) ===== */
+.gp{gap:20px 6px;margin:18px 0 8px}
+.gi{font-size:12.5px;font-weight:600;gap:8px}
+.gic{width:64px;height:64px;border-radius:21px;background:color-mix(in srgb,var(--c) 16%,var(--card));border-color:color-mix(in srgb,var(--c) 26%,var(--bd));box-shadow:0 6px 14px color-mix(in srgb,var(--c) 14%,transparent)}
+.gic.atg{font-size:31px;line-height:1}
+.ath{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:14px;margin:0 0 6px}
+.ath b{display:block;font-size:17px;font-weight:800}.ath small{color:var(--mut);font-size:12.5px}
+.athl{width:48px;height:48px;flex:0 0 48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--pri) 14%,var(--card));font-size:26px;overflow:hidden}
+.athl img{width:100%;height:100%;object-fit:cover}
+.gc>.gs:first-child{flex:1 0 100%}.gc>.gs:first-child button{flex:1}
+.gc .gs button{padding:6px 10px}
