@@ -506,3 +506,18 @@ details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 .athl img{width:100%;height:100%;object-fit:cover}
 .gc>.gs:first-child{flex:1 0 100%}.gc>.gs:first-child button{flex:1}
 .gc .gs button{padding:6px 10px}
+
+/* ===== v1.1.8: layar Stok (tambah/kurang) ===== */
+.skr{display:flex;align-items:center;gap:12px;padding:12px 0 6px;border-top:1px solid var(--bd)}
+.skr.off{opacity:.55}
+.skr .pthm{width:46px;height:46px;flex:0 0 46px;border-radius:12px}
+.skn{flex:1;min-width:0}.skn b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.skn small{color:var(--mut);font-size:12.5px}
+.sklow{color:var(--bad);font-size:12px;font-weight:600}
+.skc{display:flex;align-items:center;gap:6px}
+.skb{width:42px;height:42px;border-radius:13px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:24px;font-weight:700;line-height:1;cursor:pointer;padding:0}
+.skb:active{transform:scale(.94)}.skb.pl{background:var(--pri);border-color:transparent;color:#fff}
+.skq{width:62px;text-align:center;font-size:17px;font-weight:700;padding:10px 4px;margin:0}
+.skadd{display:flex;gap:6px;justify-content:flex-end;padding-bottom:10px}
+.skchip{border:1px solid var(--bd);background:transparent;color:var(--mut);border-radius:999px;padding:4px 12px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.skchip:active{background:var(--bd)}
+.skr .pthm.ph{font-size:22px}
