@@ -477,7 +477,7 @@ input,select,textarea{border-radius:12px;transition:border-color .15s,box-shadow
 .tabs button{border-radius:12px;transition:background .15s,color .15s,transform .1s}.tabs button:active{transform:scale(.97)}
 .tabs button.on{background:linear-gradient(135deg,var(--pri),color-mix(in srgb,var(--pri) 62%,#7c5cff));box-shadow:0 4px 12px color-mix(in srgb,var(--pri) 30%,transparent)}
 .nv{box-shadow:0 10px 30px rgba(16,24,40,.16);border-radius:22px}
-.pg{animation:pgIn .3s ease both}
+.pg{animation:none}
 @keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 ::selection{background:color-mix(in srgb,var(--pri) 30%,transparent)}
