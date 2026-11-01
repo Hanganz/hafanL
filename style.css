@@ -539,3 +539,5 @@ details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 .ulp{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
 .ulp button{border:1px solid var(--bd);background:transparent;color:var(--tx);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .ulp button.on{background:var(--pri);color:#fff;border-color:transparent}
+
+.mtr{border-top:1px solid var(--bd);padding:10px 0}
