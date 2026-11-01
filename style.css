@@ -521,3 +521,21 @@ details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 .skchip{border:1px solid var(--bd);background:transparent;color:var(--mut);border-radius:999px;padding:4px 12px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 .skchip:active{background:var(--bd)}
 .skr .pthm.ph{font-size:22px}
+
+/* ===== v1.1.9: Toko ala marketplace ===== */
+.shpord{font-size:19px;line-height:1}
+.shpm{font-size:11.5px;color:var(--mut);margin:2px 0 4px}
+.rvi{border-top:1px solid var(--bd);padding:10px 0}.rvi p{margin:4px 0 0;font-size:14px}
+.psr{margin:10px 0}
+.pstl{display:flex;margin:10px 0 6px}
+.pst{flex:1;text-align:center;position:relative;font-size:11px;color:var(--mut)}
+.pst .psd{display:block;width:14px;height:14px;border-radius:50%;margin:0 auto 5px;background:var(--bd);position:relative;z-index:1}
+.pst::before{content:'';position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--bd)}
+.pst:first-child::before{display:none}
+.pst.on .psd,.pst.on::before{background:var(--pri)}.pst.on{color:var(--tx);font-weight:600}
+.pst.bad .psd{background:var(--bad)}
+.psst{font-size:14px;font-weight:600;margin:4px 0 8px}.psst.bad{color:var(--bad)}
+.psbt{display:flex;gap:8px;flex-wrap:wrap}.psbt .b{margin:0;padding:9px 16px}
+.ulp{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.ulp button{border:1px solid var(--bd);background:transparent;color:var(--tx);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.ulp button.on{background:var(--pri);color:#fff;border-color:transparent}
