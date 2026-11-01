@@ -48,34 +48,10 @@ async function sbAuth(path,body,tok){
 const sbMk=(j,em0)=>({at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,em:(j.user&&j.user.email)||em0||''});
 async function sbLogin(em,pw){sbSesiSet(sbMk(await sbAuth('token?grant_type=password',{email:em,password:pw})))}
 let _rf=null;
-async function sbToken(force){
-  const s0=sbSesiGet();if(!s0)return null;if(!force&&s0.exp-Date.now()>60000)return s0.at;
-  if(!_rf)_rf=(async()=>{
-    try{
-      _sesiMem=null;const s=sbSesiGet()||s0;
-      if(!force&&s.exp-Date.now()>60000)return s.at;
-      const n=sbMk(await sbAuth('token?grant_type=refresh_token',{refresh_token:s.rt}),s.em);sbSesiSet(n);return n.at}
-    catch(e){
-      if(e.status===400||e.status===401||e.status===403){
-        await new Promise(r=>setTimeout(r,1500));_sesiMem=null;const c=sbSesiGet();
-        if(c&&c.rt!==s0.rt&&c.exp-Date.now()>60000)return c.at;
-        sbSesiSet(null)}
-      return null}
-  })().finally(()=>{_rf=null});
-  return _rf}async function sbToken(force){
-  const s0=sbSesiGet();if(!s0)return null;if(!force&&s0.exp-Date.now()>60000)return s0.at;
-  if(!_rf)_rf=(async()=>{
-    try{
-      _sesiMem=null;const s=sbSesiGet()||s0;
-      if(!force&&s.exp-Date.now()>60000)return s.at;
-      const n=sbMk(await sbAuth('token?grant_type=refresh_token',{refresh_token:s.rt}),s.em);sbSesiSet(n);return n.at}
-    catch(e){
-      if(e.status===400||e.status===401||e.status===403){
-        await new Promise(r=>setTimeout(r,1500));_sesiMem=null;const c=sbSesiGet();
-        if(c&&c.rt!==s0.rt&&c.exp-Date.now()>60000)return c.at;
-        sbSesiSet(null)}
-      return null}
-  })().finally(()=>{_rf=null});
+async function sbToken(){
+  const s=sbSesiGet();if(!s)return null;if(s.exp-Date.now()>60000)return s.at;
+  if(!_rf)_rf=(async()=>{try{const n=sbMk(await sbAuth('token?grant_type=refresh_token',{refresh_token:s.rt}),s.em);sbSesiSet(n);return n.at}
+    catch(e){if(e.status===400||e.status===401||e.status===403)sbSesiSet(null);return null}finally{_rf=null}})();
   return _rf}
 async function sbRpc(fn,args,staf){
   const h={apikey:SB_KEY,'Content-Type':'application/json'};
@@ -103,11 +79,11 @@ async function sbBoot(){
   if(!sbOk()){toast('Supabase belum diisi (lihat bagian >>> SUPABASE <<< di atas kode)');return}
   if(sbSesiGet()){
     try{
-      let r;try{r=await sbRpc('kl_muat',{},true)}catch(e0){if(e0.status!==401)throw e0;await sbToken(true);r=await sbRpc('kl_muat',{},true)}
+      const r=await sbRpc('kl_muat',{},true);
       if(r&&r.data&&Array.isArray(r.data.orders)){replaceS(r.data);_base=deltaSnap()}
       SB_VER=+r.versi||0;SB_PH=r.ph||'';SB_PERAN=r.peran||'';SB_NAMA=r.nama||'';SB_EM=(sbSesiGet()||{}).em||'';SB_ROLE='staf';return
     }catch(e){
-      if(e.status===403){sbSesiSet(null);toast('Akun ini tidak punya akses staf')}       else if(e.status===401){toast('Sesi berakhir. Masuk lagi sebagai staf.')}
+      if(e.status===401||e.status===403){sbSesiSet(null);toast('Akun ini tidak punya akses staf')}
       else toast('Gagal memuat data: '+(e.message||e)+'. Muat ulang halaman.')
     }
   }
@@ -168,10 +144,9 @@ async function save(){
   }
   try{draw()}catch(e){}
   try{
-    let t=await sbToken();if(!t){const e=new Error('SESI_HABIS');throw e}
+    const t=await sbToken();if(!t){const e=new Error('SESI_HABIS');throw e}
     const post=(f,b)=>fetch(SB_URL+'/rest/v1/rpc/'+f,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Authorization:'Bearer '+t},body:b});
     let r=await post(fn,body||fullBody());
-    if(r.status===401){const t2=await sbToken(true);if(t2){t=t2;r=await post(fn,body||fullBody())}}
     if(!r.ok&&fn==='kl_simpan_delta'&&r.status===404){_noDelta=true;fn='kl_simpan';r=await post(fn,fullBody())}
     if(!r.ok){let j=null;try{j=await r.json()}catch(e){}const e=new Error((j&&(j.message||j.hint))||('HTTP '+r.status));e.status=r.status;throw e}
     if(!_q){try{localStorage.removeItem('kl_bk')}catch(e){}}
