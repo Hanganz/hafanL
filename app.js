@@ -1320,11 +1320,12 @@ function okKirim(){const i=okId;okClose();draw();openKirim(i)}
 let _lk='',_pop=false;
 function navSnap(){return {det:detId,scr,cscr,tab,ds,pid,ed,fid:(found&&found!=='x')?found.id:0,ad:adm?1:0}}
 function navKey(){return JSON.stringify(navSnap())}
-const TABP={home:'dashboard',pend:'order',baru:'baru',pel:'pelanggan',lap:'laporan',set:'atur',stok:'stok',riw:'riwayat',hut:'hutang',dat:'data'},PTAB=Object.fromEntries(Object.entries(TABP).map(([k,v])=>[v,k]));
-const CPTH={beranda:'home',lacak:'lacak',toko:'toko',harga:'harga',info:'info',akun:'akun'},SPTH={masuk:'pin',staf:'sbl',daftar:'reg'};
+const TABP={home:'dashboard',pend:'dashboard/orders',baru:'dashboard/orders/new',riw:'dashboard/orders/history',pel:'dashboard/customers',hut:'dashboard/debts',stok:'dashboard/inventory',lap:'dashboard/reports',set:'dashboard/settings',dat:'dashboard/data'},PTAB=Object.fromEntries(Object.entries(TABP).map(([k,v])=>[v,k]));
+const CPTH={'':'home',track:'lacak',shop:'toko',pricing:'harga',info:'info',account:'akun',beranda:'home',lacak:'lacak',toko:'toko',harga:'harga',akun:'akun'},SPTH={login:'pin',register:'reg','dashboard/login':'sbl',masuk:'pin',daftar:'reg',staf:'sbl'};
+const ownP=(o,k)=>Object.prototype.hasOwnProperty.call(o,k)?o[k]:undefined;
 function urlNav(){if(adm)return TABP[tab]?'/'+TABP[tab]:undefined;if(bacaKodeUrl())return undefined;
-  const sp=Object.keys(SPTH).find(k=>SPTH[k]===scr);if(sp)return '/'+sp;
-  const c=Object.keys(CPTH).find(k=>CPTH[k]===cscr);return c?'/'+c:undefined}
+  const sp=Object.keys(SPTH).find(k=>SPTH[k]===scr);if(sp!==undefined)return '/'+sp;
+  const c=Object.keys(CPTH).find(k=>CPTH[k]===cscr);return c!==undefined?'/'+c:undefined}
 function pushH(){try{const k=navKey();if(k!==_lk){history.pushState(navSnap(),'',urlNav());_lk=k}}catch(e){}}
 window.addEventListener('popstate',e=>{const s=e.state;if(!s||typeof s!=='object')return;scr=s.scr||'cust';cscr=s.cscr||'home';tab=s.tab||'home';ds=s.ds||'ord';ed=s.ed||null;detId=s.det||null;
   if(s.pid&&S.orders.find(o=>o.id===s.pid))payInit(s.pid);else{pid=null;pm=null;qpop=false;if(newOid){const n=newOid;newOid=null;ss('ok',n);save();return}}
@@ -1527,8 +1528,8 @@ backfill();applyTh();
 let _autoSave=false;{const bk=SB_ROLE==='staf'?bkLocal():null;if(bk&&bk.from&&bk.from===S.stamp){try{Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,bk.data);backfill();_autoSave=true}catch(e){}}}
 {const t0=+sg('t0');if(t0){ss('t0',null);const s=(Date.now()-t0)/1000;if(s>0&&s<180)setTimeout(()=>toast('Tersimpan dalam '+s.toFixed(1)+' detik'),500)}}
 {const pp=location.pathname.replace(/^\/+|\/+$/g,'').toLowerCase();
-  if(adm){if(PTAB[pp])tab=PTAB[pp]}
-  else if(CPTH[pp])cscr=CPTH[pp];else if(SPTH[pp])scr=SPTH[pp];else if(PTAB[pp])scr='sbl'}
+  if(adm){if(ownP(PTAB,pp))tab=ownP(PTAB,pp)}
+  else if(ownP(CPTH,pp))cscr=ownP(CPTH,pp);else if(ownP(SPTH,pp))scr=ownP(SPTH,pp);else if(ownP(PTAB,pp))scr='sbl'}
 {const t0=sg('tab'),d0=sg('ds'),dt=sg('det'),sy=+sg('sy');if(t0){tab=t0;ss('tab',null)}if(d0){ds=d0;ss('ds',null)}if(dt){detId=+dt;ss('det',null)}if(sy){ss('sy',null);setTimeout(()=>{try{window.scrollTo(0,sy)}catch(e){}},120)}}
 if(ds==='mut'&&mutT)mutR=mutParse(mutT);
 lacakDariUrl();try{history.replaceState(navSnap(),'',urlNav());_lk=navKey()}catch(e){}
