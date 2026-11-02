@@ -48,20 +48,10 @@ async function sbAuth(path,body,tok){
 const sbMk=(j,em0)=>({at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,em:(j.user&&j.user.email)||em0||''});
 async function sbLogin(em,pw){sbSesiSet(sbMk(await sbAuth('token?grant_type=password',{email:em,password:pw})))}
 let _rf=null;
-async function sbToken(force){
-  const s0=sbSesiGet();if(!s0)return null;if(!force&&s0.exp-Date.now()>60000)return s0.at;
-  if(!_rf)_rf=(async()=>{
-    try{
-      _sesiMem=null;const s=sbSesiGet()||s0;
-      if(!force&&s.exp-Date.now()>60000)return s.at;
-      const n=sbMk(await sbAuth('token?grant_type=refresh_token',{refresh_token:s.rt}),s.em);sbSesiSet(n);return n.at}
-    catch(e){
-      if(e.status===400||e.status===401||e.status===403){
-        await new Promise(r=>setTimeout(r,1500));_sesiMem=null;const c=sbSesiGet();
-        if(c&&c.rt!==s0.rt&&c.exp-Date.now()>60000)return c.at;
-        sbSesiSet(null)}
-      return null}
-  })().finally(()=>{_rf=null});
+async function sbToken(){
+  const s=sbSesiGet();if(!s)return null;if(s.exp-Date.now()>60000)return s.at;
+  if(!_rf)_rf=(async()=>{try{const n=sbMk(await sbAuth('token?grant_type=refresh_token',{refresh_token:s.rt}),s.em);sbSesiSet(n);return n.at}
+    catch(e){if(e.status===400||e.status===401||e.status===403)sbSesiSet(null);return null}finally{_rf=null}})();
   return _rf}
 async function sbRpc(fn,args,staf){
   const h={apikey:SB_KEY,'Content-Type':'application/json'};
@@ -89,12 +79,11 @@ async function sbBoot(){
   if(!sbOk()){toast('Supabase belum diisi (lihat bagian >>> SUPABASE <<< di atas kode)');return}
   if(sbSesiGet()){
     try{
-      let r;try{r=await sbRpc('kl_muat',{},true)}catch(e0){if(e0.status!==401)throw e0;await sbToken(true);r=await sbRpc('kl_muat',{},true)}
+      const r=await sbRpc('kl_muat',{},true);
       if(r&&r.data&&Array.isArray(r.data.orders)){replaceS(r.data);_base=deltaSnap()}
       SB_VER=+r.versi||0;SB_PH=r.ph||'';SB_PERAN=r.peran||'';SB_NAMA=r.nama||'';SB_EM=(sbSesiGet()||{}).em||'';SB_ROLE='staf';return
     }catch(e){
-      if(e.status===403){sbSesiSet(null);toast('Akun ini tidak punya akses staf')}
-      else if(e.status===401){toast('Sesi berakhir. Masuk lagi sebagai staf.')}
+      if(e.status===401||e.status===403){sbSesiSet(null);toast('Akun ini tidak punya akses staf')}
       else toast('Gagal memuat data: '+(e.message||e)+'. Muat ulang halaman.')
     }
   }
@@ -153,12 +142,11 @@ async function save(){
     fn='kl_simpan_delta';
     body=JSON.stringify({p_basis:SB_VER,p_set:set,p_orders:up,p_hapus:hp,p_ph:px.ph,p_lacak:kirim?px.lac:null,p_ctx:kirim?px.c:null,p_akun:kirim?px.akun:null});
   }
-  try{drawAman()}catch(e){}
+  try{draw()}catch(e){}
   try{
-    let t=await sbToken();if(!t){const e=new Error('SESI_HABIS');throw e}
+    const t=await sbToken();if(!t){const e=new Error('SESI_HABIS');throw e}
     const post=(f,b)=>fetch(SB_URL+'/rest/v1/rpc/'+f,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Authorization:'Bearer '+t},body:b});
     let r=await post(fn,body||fullBody());
-    if(r.status===401){const t2=await sbToken(true);if(t2){t=t2;r=await post(fn,body||fullBody())}}
     if(!r.ok&&fn==='kl_simpan_delta'&&r.status===404){_noDelta=true;fn='kl_simpan';r=await post(fn,fullBody())}
     if(!r.ok){let j=null;try{j=await r.json()}catch(e){}const e=new Error((j&&(j.message||j.hint))||('HTTP '+r.status));e.status=r.status;throw e}
     if(!_q){try{localStorage.removeItem('kl_bk')}catch(e){}}
@@ -167,7 +155,7 @@ async function save(){
     SB_VER=(nv!=null&&isFinite(+nv)&&+nv>SB_VER)?+nv:SB_VER+1;SB_PH=px.ph;_base=nb;dirty=false;
     ss('t0',null);tampilSimpan(false);setTimeout(()=>{try{waFlush()}catch(_){};try{mtFlush()}catch(_){}},50);
     toast('Tersimpan dalam '+((Date.now()-_t0)/1000).toFixed(1)+' detik');
-    try{drawAman()}catch(_){}
+    try{draw()}catch(_){}
     if(_q){_q=false;setTimeout(save,100)}
     return true
   }catch(e){tampilSimpan(false);const m=String(e.message||e);
@@ -197,7 +185,7 @@ async function sbKeluarGo(){
     if(t)await Promise.race([fetch(SB_URL+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+t}}),new Promise(r=>setTimeout(r,4000))])}catch(e){}
   sbSesiSet(null);
   try{['kl_sb','kl_bk','kl_at','lc','lc2','acc'].forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}
-  location.replace('/')}
+  location.replace(location.pathname)}
 
 /* ---- login pelanggan (diverifikasi server) ---- */
 async function cekPin(){
@@ -270,7 +258,7 @@ Hormat kami,
 function tplMig(){if(!S.tpl)return;['baru','selesai','ingat'].forEach(k=>{if(S.tpl[k]===DT_OLD[k])S.tpl[k]=DT[k]})}
 function tplReset(){const a=$('#tb'),b=$('#ts'),d=$('#ti');if(!a||!b||!d)return;a.value=DT.baru;b.value=DT.selesai;d.value=DT.ingat;dirty=true;sbarShow();toast('Template standar dipulihkan. Tekan Simpan untuk menerapkan.')}
 function baseUrl(){const b=(S.base||'').trim();if(b&&!/claude\.ai\/artifact/i.test(b))return b;
-  return /^https?:/.test(location.href)?location.origin+'/':b}
+  return /^https?:/.test(location.href)?location.origin+location.pathname.replace(/index\.html$/,''):b}
 function fill(k,o){let s=((S.tpl&&S.tpl[k])||DT[k]).split('#{nota}').join('{nota}');if(!baseUrl())s=s.split('\n').filter(l=>!l.includes('{link}')).join('\n');
   const v={nama:o.nama,nota:nn(o),kode:tkc(o),layanan:itemsTxt(o),total:rp(o.total),bayar:sisa(o),estimasi:fmt(o.est),link:baseUrl()?baseUrl()+(/[#?]/.test(baseUrl())?'':'#lacak='+tkc(o)):'',laundry:S.nama};
   return s.replace(/\{(\w+)\}/g,(m,x)=>x in v?v[x]:m)}
@@ -504,6 +492,33 @@ function rvOf(k){return (S.tes||[]).filter(x=>x.pk===k&&x.on!==0)}
 function shpMeta(p){const r=rvOf(p.k),a=[];if(r.length)a.push('<span style="color:#f5b301">★</span> '+(r.reduce((s,x)=>s+(+x.b||0),0)/r.length).toFixed(1));if(p.tj)a.push('Terjual '+p.tj);return a.length?'<div class="shpm">'+a.join(' · ')+'</div>':''}
 function rvHtml(k){const r=rvOf(k).sort((a,b)=>(b.d||0)-(a.d||0));if(!r.length)return '<p class="mut" style="margin:16px 0 0;font-size:13px">Belum ada ulasan untuk produk ini.</p>';const av=r.reduce((s,x)=>s+(+x.b||0),0)/r.length;
   return `<h3 style="margin:18px 0 4px;font-size:15px">Ulasan pembeli <span style="color:#f5b301">★</span> ${av.toFixed(1)} <span class="mut" style="font-weight:400">(${r.length})</span></h3>`+r.slice(0,5).map(x=>`<div class="rvi"><b>${esc(x.n)}</b> <span style="color:#f5b301">${'★'.repeat(+x.b||0)}</span><p>${esc(x.t)}</p></div>`).join('')}
+/* ===== Pembayaran QRIS pelanggan: kode unik, batas waktu, centang otomatis ===== */
+let byS=null,_tk=0;
+function byrClose(){const e=document.getElementById('byS');if(e)e.remove();byS=null}
+async function byrOpen(kode,tot){byrClose();byS={kode,tot,d:null,busy:1,at:0};$('#app').insertAdjacentHTML('beforeend',`<div class="ov hi mr" id="byS" onclick="if(event.target===this)byrClose()"><div class="bs" style="max-height:92vh;overflow:auto"><div class="grip"></div><div id="byB"></div></div></div>`);byrDraw();await byrMulai()}
+async function byrMulai(){if(!byS)return;byS.busy=1;byS.err='';byrDraw();try{const d=await sbRpc('kl_pesan_bayar_mulai',{p_kode:byS.kode});byS.d=d||null;if(d&&d.sisa>0)byS.at=Date.now()+d.sisa*1000}catch(e){byS.err=e&&e.status===404?'Fitur pembayaran belum aktif di server.':'Gagal menyiapkan pembayaran. Periksa koneksi lalu coba lagi.'}byS.busy=0;byrDraw()}
+async function byrPoll(){if(!byS||byS.busy||!byS.d||byS.d.dibayar)return;try{const d=await sbRpc('kl_pesan_bayar_status',{p_kode:byS.kode});if(!byS||!d)return;const was=byS.d.dibayar,wk=byS.d.kedaluwarsa;if(d.sisa>0)byS.at=Date.now()+d.sisa*1000;byS.d=Object.assign({},byS.d,d);if((d.dibayar&&!was)||(d.kedaluwarsa&&!wk))byrDraw()}catch(e){}}
+function byrDraw(){const el=document.getElementById('byB');if(!el||!byS)return;const d=byS.d,hd='<div class="row" style="margin:6px 0 8px"><b style="font-size:18px">Pembayaran</b><button class="bk" onclick="byrClose()" aria-label="Tutup">×</button></div>';
+  if(byS.err){el.innerHTML=hd+'<p class="mut" style="text-align:center;padding:18px 0">'+esc(byS.err)+'</p><button class="b" style="width:100%;margin:0" onclick="byrMulai()">Coba lagi</button>';return}
+  if(byS.busy||!d){el.innerHTML=hd+'<p class="mut" style="text-align:center;padding:24px 0">Menyiapkan pembayaran…</p>';return}
+  if(d.status==='tidak_ada'||d.status==='ditolak'){el.innerHTML=hd+'<p class="mut" style="text-align:center;padding:18px 0">'+(d.status==='ditolak'?'Pesanan ini tidak diproses, tidak perlu dibayar.':'Pesanan tidak ditemukan.')+'</p>';return}
+  if(d.dibayar){el.innerHTML=hd+`<div style="text-align:center;padding:6px 0 10px"><div class="okc">✓</div><h2 style="margin:12px 0 4px">Pembayaran diterima</h2><p class="mut" style="margin:0">${rp(d.tb||byS.tot)} · Pesanan ${esc(byS.kode)}</p><p class="mut" style="font-size:12.5px;margin:10px 0 0">Terima kasih. Pesanan ini sudah lunas, tidak perlu membayar lagi.</p></div><button class="b" style="width:100%;margin:12px 0 0" onclick="byrClose();psnOpen()">Lihat pesanan saya</button>`;return}
+  const s=Math.max(0,Math.round((byS.at-Date.now())/1000));
+  if(d.kedaluwarsa||s<=0){el.innerHTML=hd+`<div style="text-align:center;padding:6px 0"><h2 style="margin:8px 0 4px">Waktu pembayaran habis</h2><p class="mut" style="margin:0 0 12px">QR tidak berlaku lagi. Buat QR baru, atau bayar langsung di toko.</p></div><button class="b" style="width:100%;margin:0" onclick="byrMulai()">Buat QR baru</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="byrClose()">Bayar di toko</button>`;return}
+  const p=S.qris&&typeof qrcode==='function'&&qrisAmt(S.qris,d.tb,byS.kode);
+  el.innerHTML=hd+`<div style="text-align:center"><p class="mut" style="margin:0 0 6px">Pesanan ${esc(byS.kode)}</p>${p?`<div style="margin:6px auto">${qrSvg(p,230)}</div>`:'<p class="mut">QRIS belum tersedia. Silakan bayar di toko.</p>'}<p style="font-size:24px;font-weight:800;margin:6px 0 2px">${rp(d.tb)}</p><p class="mut" style="margin:0 0 6px;font-size:13px">Sudah termasuk kode unik ${d.ku}. Bayar tepat sesuai nominal ini.</p><p style="margin:6px 0 2px">Bayar dalam <b id="byT" style="font-size:18px">${mmss(s)}</b></p><p class="mut" style="font-size:12.5px;margin:0 0 4px">Layar ini berubah sendiri begitu pembayaran terdeteksi.</p></div>`}
+function bayarBtn(z){const b=z.b;if(!b||b.status==='tidak_ada'||b.status==='ditolak')return '';if(b.dibayar)return '<span class="psb ok">✓ Dibayar</span>';if(!S.qris||typeof qrcode!=='function')return '';return `<button class="b" onclick="psnClose();byrOpen('${esc(z.x.k)}',${+z.x.tot||0})">Bayar sekarang</button>`}
+async function byrSync(){if(SB_ROLE!=='staf'||!adm)return;try{const r=await sbRpc('kl_pesan_bayar_daftar',{},true);if(!Array.isArray(r))return;let n=0;
+  r.forEach(p=>{const o=(S.orders||[]).find(x=>x.online===p.kode);if(!o||o.st===4)return;if((o.pay||[]).some(z=>z.ref===p.ref))return;if(Math.round(tagih(o))<=0)return;const a=Math.round(+p.tb||0);if(!(a>0))return;
+    (o.pay=o.pay||[]).push({t:Date.now(),a,m:'QRIS',by:'Mutasiku',n:'Otomatis · kode unik '+p.ku,ref:p.ref});sync(o);aud('Bayar otomatis',o,rp(a)+' via QRIS (pesanan online)');n++});
+  if(n){dirty=true;save();if(tab==='home'||tab==='pend')try{draw()}catch(e){}}}catch(e){}}
+function byrTick(){_tk++;try{
+  if(typeof qpop!=='undefined'&&qpop&&typeof pm!=='undefined'&&pm){const el=document.getElementById('qrT');if(el&&pm.qt){const s=Math.max(0,Math.round((pm.qt-Date.now())/1000));el.textContent=mmss(s);if(s<=0&&!pm.exp){pm.exp=1;payRedraw()}}
+    if(pm.done&&!pm._c){pm._c=1;setTimeout(()=>{if(pm&&pm.done)payClose(true)},1800)}
+    if(_tk%4===0&&!pm.done)mtLoad()}
+  if(byS&&byS.d&&!byS.d.dibayar){const el=document.getElementById('byT');if(el&&byS.at){const s=Math.max(0,Math.round((byS.at-Date.now())/1000));el.textContent=mmss(s);if(s<=0&&!byS.d.kedaluwarsa){byS.d.kedaluwarsa=true;byrDraw()}}if(_tk%5===0)byrPoll()}
+  }catch(e){}}
+setInterval(byrTick,1000);
 function psnClose(){const e=document.getElementById('psnS');if(e)e.remove()}
 function psnOpen(){psnClose();$('#app').insertAdjacentHTML('beforeend',`<div class="ov hi mr" id="psnS" onclick="if(event.target===this)psnClose()"><div class="bs" style="max-height:92vh;overflow:auto"><div class="grip"></div><div id="psnSb"><div class="row" style="margin:6px 0 8px"><b style="font-size:18px">Pesanan saya</b><button class="bk" onclick="psnClose()" aria-label="Tutup">×</button></div><p class="mut">Memuat…</p></div></div></div>`);psnLoad()}
 function psnStage(r,o,x){if(!r||r.status==='tidak_ada')return {i:0,tx:'Status belum bisa dimuat. Coba lagi nanti.'};
@@ -513,10 +528,10 @@ function psnStage(r,o,x){if(!r||r.status==='tidak_ada')return {i:0,tx:'Status be
   return {i:1,tx:'Pesanan diterima toko'}}
 function psnRow(z){const x=z.x,r=z.r,s=psnStage(r,z.o,x),it=(x.it||[]).map(i=>esc(i.n)+' ×'+i.q).join(', ');
   const stp=['Dikirim','Diterima','Siap','Selesai'].map((l,i)=>`<div class="pst${!s.bad&&i<=s.i?' on':''}${s.bad&&i===0?' bad':''}"><b class="psd"></b><span>${l}</span></div>`).join('');
-  return `<div class="card psr"><div class="row"><b>${esc(x.k)}</b><span class="mut" style="font-size:12px">${new Date(x.t).toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span></div>${it?`<div class="mut" style="margin:4px 0 8px;font-size:13px">${it}${x.tot?' · '+rp(x.tot):''}</div>`:''}<div class="pstl">${stp}</div><div class="psst${s.bad?' bad':''}">${s.tx}</div><div class="psbt">${r&&r.lacak?`<button class="b g" onclick="psnLacak('${esc(r.lacak)}')">Lacak</button>`:''}${s.i===3&&!s.bad&&(x.it||[]).length?`<button class="b" onclick="psnUlas('${esc(x.k)}')">Beri ulasan</button>`:''}</div></div>`}
+  return `<div class="card psr"><div class="row"><b>${esc(x.k)}</b><span class="mut" style="font-size:12px">${new Date(x.t).toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span></div>${it?`<div class="mut" style="margin:4px 0 8px;font-size:13px">${it}${x.tot?' · '+rp(x.tot):''}</div>`:''}<div class="pstl">${stp}</div><div class="psst${s.bad?' bad':''}">${s.tx}</div><div class="psbt">${bayarBtn(z)}${r&&r.lacak?`<button class="b g" onclick="psnLacak('${esc(r.lacak)}')">Lacak</button>`:''}${s.i===3&&!s.bad&&(x.it||[]).length?`<button class="b" onclick="psnUlas('${esc(x.k)}')">Beri ulasan</button>`:''}</div></div>`}
 async function psnLoad(){const L=psnList().filter(x=>Date.now()-x.t<30*864e5).slice(0,6),head='<div class="row" style="margin:6px 0 8px"><b style="font-size:18px">Pesanan saya</b><button class="bk" onclick="psnClose()" aria-label="Tutup">×</button></div>',el=()=>document.getElementById('psnSb');
   if(!L.length){if(el())el().innerHTML=head+'<p class="mut" style="text-align:center;padding:24px 0">Belum ada pesanan. Pesanan yang Anda kirim dari Toko akan muncul di sini.</p>';return}
-  const rows=await Promise.all(L.map(async x=>{let r=null,o=null;try{r=await sbRpc('kl_pesan_status',{p_kode:x.k});if(r&&r.status==='diterima'&&r.lacak){try{const z=await sbRpc('kl_lacak_kode',{p_kode:r.lacak});o=(z&&z.o)||null}catch(e){}}}catch(e){}return {x,r,o}}));
+  const rows=await Promise.all(L.map(async x=>{let r=null,o=null;try{r=await sbRpc('kl_pesan_status',{p_kode:x.k});if(r&&r.status==='diterima'&&r.lacak){try{const z=await sbRpc('kl_lacak_kode',{p_kode:r.lacak});o=(z&&z.o)||null}catch(e){}}}catch(e){}let b=null;try{b=await sbRpc('kl_pesan_bayar_status',{p_kode:x.k})}catch(e){}return {x,r,o,b}}));
   if(el())el().innerHTML=head+rows.map(psnRow).join('')}
 function psnLacak(kd){psnClose();lm='k';nv('lacak');setTimeout(()=>{const i=$('#ck');if(i){i.value=kd;cari()}},60)}
 let ul=null;
@@ -539,7 +554,7 @@ async function psnCek(){const e=$('#psnb');if(!e)return;const L=psnList().filter
   let h='';for(const x of L.slice(0,1)){let r=null;try{r=await sbRpc('kl_pesan_status',{p_kode:x.k})}catch(er){}if(!r||r.status==='tidak_ada'){continue}
     const s=r.status;h+=`<div class="psn ${s}"><div class="psi">${s==='diterima'?'✅':s==='ditolak'?'❌':'🕒'}</div><div style="flex:1;min-width:0"><b>Pesanan ${esc(x.k)}</b><div class="mut" style="font-size:12.5px">${s==='baru'?'Menunggu konfirmasi toko…':s==='diterima'?'Diterima toko'+(r.lacak?' · Kode lacak <b>'+esc(r.lacak)+'</b>':''):'Maaf, pesanan tidak bisa diproses'+(r.alasan?': '+esc(r.alasan):'')}</div></div>${s==='diterima'&&r.lacak?`<button class="b" style="margin:0;padding:8px 12px" onclick="lm='k';nv('lacak');setTimeout(()=>{const i=$('#ck');if(i){i.value='${esc(r.lacak)}';cari()}},60)">Lacak</button>`:''}${s!=='baru'?`<button class="bk" onclick="psnDel('${esc(x.k)}')" aria-label="Tutup">×</button>`:''}</div>`}
   e.innerHTML=h}
-function cDone(kd,tot){const s=$('#csb');if(s)s.innerHTML=`<div style="text-align:center;padding:10px 0 4px"><div class="okc">✓</div><h2 style="margin:14px 0 4px">Pesanan terkirim!</h2><p class="mut" style="margin:0 0 12px">Toko akan mengonfirmasi pesanan Anda. Status bisa dilihat di halaman Toko.</p><div class="psk">${esc(kd)}</div><p class="mut" style="font-size:12.5px;margin:6px 0 14px">Simpan kode pesanan ini · Total ${rp(tot)}</p><button class="b" style="width:100%;margin:0" onclick="cClose();psnOpen()">Lihat pesanan saya</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="cClose();nv('toko')">Selesai</button></div>`}
+function cDone(kd,tot){const s=$('#csb');if(s)s.innerHTML=`<div style="text-align:center;padding:10px 0 4px"><div class="okc">✓</div><h2 style="margin:14px 0 4px">Pesanan terkirim!</h2><p class="mut" style="margin:0 0 12px">Toko akan mengonfirmasi pesanan Anda. Status bisa dilihat di halaman Toko.</p><div class="psk">${esc(kd)}</div><p class="mut" style="font-size:12.5px;margin:6px 0 14px">Simpan kode pesanan ini · Total ${rp(tot)}</p>${(S.qris&&typeof qrcode==='function')?`<button class="b" style="width:100%;margin:0 0 8px" onclick="cClose();byrOpen('${esc(kd)}',${+tot||0})">Bayar sekarang (QRIS)</button>`:''}<button class="b g" style="width:100%;margin:0" onclick="cClose();psnOpen()">Lihat pesanan saya</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="cClose();nv('toko')">Selesai</button></div>`}
 async function cKirim(){const L=cItems();if(!L.length)return;if(!(cmeta.nm||'').trim()){toast('Isi nama Anda dulu');return}if(cmeta.mode==='antar'&&!(cmeta.al||'').trim()){toast('Isi alamat pengantaran');return}
   const w=(cmeta.wa||'').trim();if(w&&!validWa(w)){toast('Nomor WA tidak valid (contoh 08123456789)');return}if(cBusy)return;cBusy=true;const bt=$('#cks');if(bt){bt.disabled=true;bt.textContent='Mengirim…'}
   try{const r=await sbRpc('kl_pesan_kirim',{p_nama:cmeta.nm.trim(),p_wa:w,p_mode:cmeta.mode,p_al:cmeta.mode==='antar'?cmeta.al.trim():'',p_items:L.map(i=>({k:i.p.k,q:i.q})),p_ref:cmeta.ref||'',p_bayar:cmeta.paid?'qris':'nanti'});
@@ -1111,7 +1126,7 @@ function sync(o){const p=(o.pay||[]).reduce((s,x)=>s+x.a,0);o.bayar=p>=o.total?'
 function payInit(id){const o=S.orders.find(x=>x.id===id);if(!o)return;pid=id;qpop=false;pm={tipe:'lunas',met:'Tunai',nom:String(tagih(o)),sal:0,cat:'',ts:nowLocal()}}
 function payOpen(id){payInit(id);draw()}
 function payBack(){if(newOid){payClose();return}pid=null;pm=null;qpop=false;draw()}
-function payClose(sv){const n=newOid;pid=null;pm=null;qpop=false;if(n){newOid=null;okId=n;ss('ok',n);tab='pend';save();return}if(sv)save();else{tab='home';draw()}}
+function payClose(sv){const n=newOid;{const oo=S.orders.find(x=>x.id===pid);if(oo&&oo.qa){delete oo.qa;delete oo.qt}}pid=null;pm=null;qpop=false;if(n){newOid=null;okId=n;ss('ok',n);tab='pend';save();return}if(sv)save();else{tab='home';draw()}}
 function payRem(o){const k=nw(o.wa),sl=(S.sal&&S.sal[k])||0;return Math.max(0,tagih(o)-(pm.sal?Math.min(sl,tagih(o)):0))}
 function payRedraw(){const sh=document.getElementById('psh');if(!sh||!pid||!pm){draw();return}const tmp=document.createElement('div');tmp.innerHTML=payHtml();const n=tmp.firstElementChild;if(!n){draw();return}const st=sh.scrollTop;sh.innerHTML=n.innerHTML;sh.scrollTop=st;updKem()}
 function setTipe(v){const o=S.orders.find(x=>x.id===pid);pm.tipe=v;pm.nom=v==='lunas'?String(payRem(o)):'';payRedraw()}
@@ -1128,13 +1143,20 @@ function payConfirm(){const o=S.orders.find(x=>x.id===pid);if(!o)return;
   if(pm.tipe==='dp'&&!(n>0)){toast('Isi nominal DP');return}
   if(pm.met==='QRIS'&&rem>0){if(!S.qris||!qrisAmt(S.qris,1000)){toast('QRIS belum diatur di tab Atur');return}qpop=true;payRedraw();return}
   payGo()}
-function payGo(){const o=S.orders.find(x=>x.id===pid);if(!o)return;let rem=tagih(o);o.pay=o.pay||legacy(o);
+function payGo(){const o=S.orders.find(x=>x.id===pid);if(!o)return;let rem=tagih(o);if(rem<=0){toast('Order ini sudah lunas');payClose(true);return}o.pay=o.pay||legacy(o);
   const k=nw(o.wa),by=me()||'Admin',ts=new Date(pm.ts).getTime()||Date.now();
   if(pm.sal){const sl=(S.sal&&S.sal[k])||0,cut=Math.min(sl,rem);if(cut>0){S.sal[k]=sl-cut;o.pay.push({t:ts,a:cut,m:'Saldo',n:'Potong saldo',by});rem-=cut}}
   if(rem>0){const n=+pm.nom||0,a=Math.min(n,rem);if(a>0)o.pay.push({t:ts,a,m:pm.met,n:pm.cat,by,rc:n,ref:pm.met==='QRIS'?(pm.ref||''):''})}
   sync(o);aud('Pembayaran',o,rp(o.total-tagih(o))+' terbayar via '+pm.met);payClose(true)}
-function payQr(o){const n=Math.min(+pm.nom||0,payRem(o)),p=n>0&&typeof qrcode==='function'&&qrisAmt(S.qris,n,refOf(o));
-  return `<div class="ov hi"><div class="md"><h2>Bayar via QRIS</h2><p class="mut">Nota ${nn(o)} · ${esc(o.nama)}</p>${p?qrSvg(p,260):'<p>QRIS belum bisa dibuat.</p>'}<p style="font-size:24px;margin:8px 0"><b>${rp(n)}</b></p><label style="text-align:left">4 digit referensi dari bukti bayar pelanggan</label><input id="pref" inputmode="numeric" maxlength="4" placeholder="mis. 1234" style="text-align:center;font-size:20px;letter-spacing:6px"><button class="b" style="width:100%" onclick="payQrOk()">Sudah Dibayar</button><button class="b g" style="width:100%" onclick="payClose()">Bayar Nanti</button></div></div>`}
+function mmss(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function payQrBaru(){pm.ku=0;pm.qt=0;pm.exp=0;payRedraw()}
+function payQr(o){const n0=Math.min(+pm.nom||0,payRem(o));
+  if(!pm.ku||!pm.qt){pm.ku=1+Math.floor(Math.random()*999);pm.qt=Date.now()+15*60000;pm.exp=0}
+  const n=n0+pm.ku,sisa=Math.max(0,Math.round((pm.qt-Date.now())/1000)),hd='<div class="ov hi"><div class="md">';
+  if(pm.done)return hd+'<div class="okc">✓</div><h2 style="margin:12px 0 4px">Pembayaran diterima</h2><p class="mut" style="margin:0">'+rp(pm.doneA||n)+' · Nota '+nn(o)+'</p></div></div>';
+  if(sisa<=0||pm.exp){o.qa=0;return hd+'<h2>Waktu bayar habis</h2><p class="mut">QR berlaku 15 menit. Buat QR baru kalau pelanggan belum membayar.</p><button class="b" style="width:100%" onclick="payQrBaru()">Buat QR baru</button><button class="b g" style="width:100%" onclick="payClose()">Bayar Nanti</button></div></div>'}
+  o.qa=n;o.qt=pm.qt;const p=n0>0&&typeof qrcode==='function'&&qrisAmt(S.qris,n,refOf(o));
+  return hd+`<h2>Bayar via QRIS</h2><p class="mut">Nota ${nn(o)} · ${esc(o.nama)}</p>${p?qrSvg(p,260):'<p>QRIS belum bisa dibuat.</p>'}<p style="font-size:24px;margin:8px 0"><b>${rp(n)}</b></p><p class="mut" style="margin:0 0 4px;font-size:13px">Sudah termasuk kode unik ${pm.ku}. Berlaku <b id="qrT">${mmss(sisa)}</b></p><p class="mut" style="font-size:12.5px;margin:0 0 8px">Pembayaran terdeteksi otomatis. Jika belum terdeteksi, isi 4 digit referensi lalu tekan Sudah Dibayar.</p><label style="text-align:left">4 digit referensi dari bukti bayar pelanggan</label><input id="pref" inputmode="numeric" maxlength="4" placeholder="mis. 1234" style="text-align:center;font-size:20px;letter-spacing:6px"><button class="b" style="width:100%" onclick="payQrOk()">Sudah Dibayar</button><button class="b g" style="width:100%" onclick="payClose()">Bayar Nanti</button></div></div>`}
 function payQrOk(){const r=(($('#pref')||{}).value||'').replace(/\D/g,'');if(r.length!==4){toast('Isi 4 digit referensi dari bukti bayar');return}pm.ref=r;payGo()}
 function payHtml(){if(!pid||!pm)return '';const o=S.orders.find(x=>x.id===pid);if(!o){pid=null;return ''}
   const tg=tagih(o),k=dig(o.wa),sl=(S.sal&&S.sal[k])||0,rem=payRem(o),tp=pm.tipe,showM=tp==='lunas'||tp==='dp';
@@ -1268,17 +1290,19 @@ async function impKar(inp){const f=inp.files&&inp.files[0];if(!f)return;let rows
   draw();toast(add+' ditambah, '+upd+' diperbarui. Tekan Simpan.')}
 /* ===== WA otomatis via Fonnte (token Fonnte ada di Edge Function Supabase, BUKAN di sini) ===== */
 /* ===== Mutasiku: uang masuk dicocokkan otomatis ke order ===== */
-let _mtQ=[],_mtL=[],_mtBusy=0,_mtSig='';
-async function mtLoad(){if(_mtBusy||SB_ROLE!=='staf'||!adm)return;_mtBusy=1;
+let _mtQ=[],_mtL=[],_mtBusy=0;
+async function mtLoad(){if(SB_ROLE==='staf'&&adm)byrSync();if(_mtBusy||SB_ROLE!=='staf'||!adm)return;_mtBusy=1;
   try{const r=await sbRpc('kl_mutasi_daftar',{},true);_mtL=Array.isArray(r)?r:[];mtAuto()}catch(e){/* SQL 09 belum dijalankan: diam saja */}finally{_mtBusy=0}}
-function mtCand(m){const a=Math.round(+m.jumlah||0);return (S.orders||[]).filter(o=>o.st!==4&&Math.round(tagih(o))===a&&a>0&&Date.now()-(o.masuk||0)<21*864e5)}
+function mtCand(m){const a=Math.round(+m.jumlah||0);if(!(a>0))return [];const t=Date.now();
+  const q=(S.orders||[]).filter(o=>o.st!==4&&o.qa===a&&tagih(o)>0&&(o.qt||0)+180000>t);if(q.length)return q;
+  return (S.orders||[]).filter(o=>o.st!==4&&Math.round(tagih(o))===a&&t-(o.masuk||0)<21*864e5)}
 function mtSudah(m){return (S.orders||[]).some(o=>(o.pay||[]).some(p=>p.ref===m.ref))}
 function mtTerap(m,oid){const o=S.orders.find(x=>x.id===oid);if(!o)return false;const a=Math.round(+m.jumlah||0);
   (o.pay=o.pay||[]).push({t:Date.now(),a,m:'QRIS',by:'Mutasiku',n:'Otomatis (Mutasiku)',ref:m.ref});sync(o);aud('Bayar otomatis',o,rp(a)+' via Mutasiku');
-  _mtQ.push({id:m.id,st:'selesai',ke:nn(o)});_mtL=_mtL.filter(x=>x.id!==m.id);return true}
+  delete o.qa;delete o.qt;if(pid===o.id&&pm&&qpop){pm.done=1;pm.doneA=a}_mtQ.push({id:m.id,st:'selesai',ke:nn(o)});_mtL=_mtL.filter(x=>x.id!==m.id);return true}
 function mtAuto(){let n=0;_mtL.slice().forEach(m=>{if(mtSudah(m)){_mtQ.push({id:m.id,st:'selesai',ke:'sudah tercatat'});_mtL=_mtL.filter(x=>x.id!==m.id);n++;return}
   const c=mtCand(m);if(c.length===1&&mtTerap(m,c[0].id)){n++;toast('Pembayaran '+rp(m.jumlah)+' otomatis dicatat ke '+nn(c[0]))}});
-  if(n){dirty=true;save()}else if(_mtQ.length)mtFlush();{const sg2=_mtL.map(x=>x.id).join(',');if(tab==='home'&&sg2!==_mtSig){_mtSig=sg2;try{drawAman()}catch(e){}}}}
+  if(n){dirty=true;save();if(pm&&qpop)try{payRedraw()}catch(e){}}else if(_mtQ.length)mtFlush();if(tab==='home')try{draw()}catch(e){}}
 async function mtFlush(){const q=_mtQ.splice(0);for(const x of q){try{await sbRpc('kl_mutasi_tandai',{p_id:x.id,p_status:x.st,p_ke:x.ke||''},true)}catch(e){_mtQ.push(x)}}}
 function mtPilih(mid,oid){const m=_mtL.find(x=>x.id===mid);if(!m||!mtTerap(m,oid))return;toast('Pembayaran dicatat');dirty=true;save();draw()}
 function mtAbai(mid){_mtQ.push({id:mid,st:'abaikan',ke:''});_mtL=_mtL.filter(x=>x.id!==mid);mtFlush();draw()}
@@ -1320,13 +1344,7 @@ function okKirim(){const i=okId;okClose();draw();openKirim(i)}
 let _lk='',_pop=false;
 function navSnap(){return {det:detId,scr,cscr,tab,ds,pid,ed,fid:(found&&found!=='x')?found.id:0,ad:adm?1:0}}
 function navKey(){return JSON.stringify(navSnap())}
-const TABP={home:'dashboard',pend:'dashboard/orders',baru:'dashboard/orders/new',riw:'dashboard/orders/history',pel:'dashboard/customers',hut:'dashboard/debts',stok:'dashboard/inventory',lap:'dashboard/reports',set:'dashboard/settings',dat:'dashboard/data'},PTAB=Object.fromEntries(Object.entries(TABP).map(([k,v])=>[v,k]));
-const CPTH={'':'home',track:'lacak',shop:'toko',pricing:'harga',info:'info',account:'akun',beranda:'home',lacak:'lacak',toko:'toko',harga:'harga',akun:'akun'},SPTH={login:'pin',register:'reg','dashboard/login':'sbl',masuk:'pin',daftar:'reg',staf:'sbl'};
-const ownP=(o,k)=>Object.prototype.hasOwnProperty.call(o,k)?o[k]:undefined;
-function urlNav(){if(adm)return TABP[tab]?'/'+TABP[tab]:undefined;if(bacaKodeUrl())return undefined;
-  const sp=Object.keys(SPTH).find(k=>SPTH[k]===scr);if(sp!==undefined)return '/'+sp;
-  const c=Object.keys(CPTH).find(k=>CPTH[k]===cscr);return c!==undefined?'/'+c:undefined}
-function pushH(){try{const k=navKey();if(k!==_lk){history.pushState(navSnap(),'',urlNav());_lk=k}}catch(e){}}
+function pushH(){try{const k=navKey();if(k!==_lk){history.pushState(navSnap(),'');_lk=k}}catch(e){}}
 window.addEventListener('popstate',e=>{const s=e.state;if(!s||typeof s!=='object')return;scr=s.scr||'cust';cscr=s.cscr||'home';tab=s.tab||'home';ds=s.ds||'ord';ed=s.ed||null;detId=s.det||null;
   if(s.pid&&S.orders.find(o=>o.id===s.pid))payInit(s.pid);else{pid=null;pm=null;qpop=false;if(newOid){const n=newOid;newOid=null;ss('ok',n);save();return}}
   found=s.fid?(S.orders.find(o=>o.id===s.fid)||null):null;_lk=navKey();_pop=true;draw()});
@@ -1505,16 +1523,12 @@ function tambahPrd(n){bacaSv();S.prd.push({k:'p'+Date.now().toString(36),n:n||'P
 function togPrd(i){bacaSv();S.prd[i].on=S.prd[i].on===0?1:0;draw()}
 function hapusPrd(i){const p=S.prd[i];if(!p)return;if(S.orders.some(o=>items(o).some(x=>x.sv===p.k))){toast('Produk ini sudah dipakai di order. Nonaktifkan saja.');return}ask('Hapus produk "'+p.n+'"?',()=>{bacaSv();delete SV[p.k];S.prd.splice(i,1);draw()},'Hapus')}
 function draw(){const sh=document.querySelector('.sheet:not(#pk)'),st=sh?sh.scrollTop:0,wy=window.scrollY,ch=navKey()!==_lk;
-  if(!ch){const a0=document.getElementById('app');if(a0)a0.classList.remove('pgin')}
-  const A=document.getElementById('app'),oh=A?A.innerHTML:'',on=A?Array.from(A.childNodes):[];
   adm?dAdm():scr==='pin'?dPin():scr==='sbl'?dSbLogin():scr==='reg'?dReg():dCust();
-  if(A&&!ch&&on.length&&A.innerHTML===oh)A.replaceChildren(...on);
   if(_pop)_pop=false;else pushH();
   const s2=document.querySelector('.sheet:not(#pk)');if(s2)s2.scrollTop=ch?0:st;
   if(ch){document.body.classList.remove('nvh');const a=document.getElementById('app');if(a){a.classList.remove('pgin');void a.offsetWidth;a.classList.add('pgin')}}
   try{window.scrollTo(0,ch?0:wy)}catch(e){}
   setTimeout(tsInit,60)}
-function drawAman(){const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&!a.readOnly&&a.type!=='button')return;draw()}
 function backfill(){tplMig();['sal','tebus'].forEach(f=>{if(!S[f])return;const n={};Object.keys(S[f]).forEach(k=>{const nk=nw(k);n[nk]=(n[nk]||0)+S[f][k]});S[f]=n});(S.tu||[]).forEach(x=>{x.k=nw(x.k)});
   [...S.orders].sort((a,b)=>a.id-b.id).forEach(o=>{if(!o.no)o.no=newNo(o.masuk)});migrate()}
 function splash(){if(adm)return;const d=document.createElement('div');d.id='spl';d.innerHTML=`${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<b>${esc(S.nama)}</b>`;document.body.appendChild(d);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),450)},800)}
@@ -1527,12 +1541,9 @@ if(S.warna)document.documentElement.style.setProperty('--pri',S.warna);
 backfill();applyTh();
 let _autoSave=false;{const bk=SB_ROLE==='staf'?bkLocal():null;if(bk&&bk.from&&bk.from===S.stamp){try{Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,bk.data);backfill();_autoSave=true}catch(e){}}}
 {const t0=+sg('t0');if(t0){ss('t0',null);const s=(Date.now()-t0)/1000;if(s>0&&s<180)setTimeout(()=>toast('Tersimpan dalam '+s.toFixed(1)+' detik'),500)}}
-{const pp=location.pathname.replace(/^\/+|\/+$/g,'').toLowerCase();
-  if(adm){if(ownP(PTAB,pp))tab=ownP(PTAB,pp)}
-  else if(ownP(CPTH,pp))cscr=ownP(CPTH,pp);else if(ownP(SPTH,pp))scr=ownP(SPTH,pp);else if(ownP(PTAB,pp))scr='sbl'}
 {const t0=sg('tab'),d0=sg('ds'),dt=sg('det'),sy=+sg('sy');if(t0){tab=t0;ss('tab',null)}if(d0){ds=d0;ss('ds',null)}if(dt){detId=+dt;ss('det',null)}if(sy){ss('sy',null);setTimeout(()=>{try{window.scrollTo(0,sy)}catch(e){}},120)}}
 if(ds==='mut'&&mutT)mutR=mutParse(mutT);
-lacakDariUrl();try{history.replaceState(navSnap(),'',urlNav());_lk=navKey()}catch(e){}
+lacakDariUrl();try{history.replaceState(navSnap(),'');_lk=navKey()}catch(e){}
 splash();draw();
 if(_autoSave)setTimeout(()=>{toast('Menyimpan perubahan berikutnya…');save()},500);
 else if(SB_PERAN==='owner'&&(S.pin||(S.kar||[]).some(k=>k.pin)))setTimeout(save,900);
