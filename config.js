@@ -2,7 +2,7 @@
    >>> SUPABASE: ISI BAGIAN INI SAJA <<<
    1. SB_URL : Project URL             (Supabase > Project Settings > API)
    2. SB_KEY : anon / publishable key  (JANGAN service_role!)
-   File ini boleh terlihat publik; keamanan data ada di SQL (supabase_keamanan.sql).
+   File ini boleh terlihat publik; keamanan data ada di SQL (folder sql/).
    ===================================================================== */
 window.KL_CONFIG = {
   SB_URL: 'https://neposhpkamrfvbwvbjcv.supabase.co',
@@ -10,5 +10,5 @@ window.KL_CONFIG = {
   // true  = login staf diingat di perangkat ini, tidak perlu masuk ulang (localStorage).
   // false = login hilang saat tab ditutup. Pakai true hanya di HP/komputer toko sendiri.
   INGAT_LOGIN: true,
-  VERSI: '1.1'
+  VERSI: '1.3.1'
 };
