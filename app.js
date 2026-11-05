@@ -1078,24 +1078,27 @@ function nvA(k){if(k==='set'){if(!_kel){setGrp='set';setSec=''}_kel=0}mnId=null;
 function seg(){return `<div class="seg"><button class="${tab==='pend'?'on':''}" onclick="tab='pend';q='';fl='';draw()">Pending</button><button class="${tab==='riw'?'on':''}" onclick="tab='riw';q='';fl='';draw()">Riwayat</button></div>`}
 function uangMasuk(a,b){let s=0;S.orders.forEach(o=>(o.pay||legacy(o)).forEach(p=>{if(p.t>=a&&p.t<b&&p.m!=='Saldo')s+=p.a}));(S.tu||[]).forEach(x=>{if(x.t>=a&&x.t<b&&x.m!=='Saldo')s+=x.a});return s}
 function nilaiOrder(a,b){return S.orders.filter(o=>o.st!==4&&o.masuk>=a&&o.masuk<b).reduce((s,o)=>s+o.total,0)}
-function pzSt(l,v,c,k){return `<div class="st2" style="--c:${c}"${k?` onclick="${k}"`:''}><small>${l}</small><b>${v}</b></div>`}
 function dProf(){
   const own=owner(),role=own?'Owner':'Kasir',em=SB_EM||'',nm=(SB_NAMA||em.split('@')[0]||role).trim()||role;
   const n=new Date(),d0=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),O=S.orders.filter(o=>o.st!==4),hari=O.filter(o=>o.masuk>=d0);
+  const done=hari.filter(o=>o.st>=2).length,pct=hari.length?Math.round(done/hari.length*100):0;
   const belum=O.filter(o=>o.st<4).reduce((t,o)=>t+Math.max(0,tagih(o)),0);
-  const st=own?pzSt('Omzet hari ini',rp(hari.reduce((t,o)=>t+o.total,0)),'#1e9e5a',"nvA('lap')")+pzSt('Order hari ini',hari.length,'#3b82f6',"nvA('pend')")+pzSt('Uang masuk hari ini',rp(uangMasuk(d0,d0+864e5)),'#10b981',"nvA('lap')")+pzSt('Belum lunas',rp(belum),belum?'#d64545':'#8b5cf6',"nvH()")
-   :pzSt('Order saya hari ini',hari.filter(o=>o.pj===me()).length,'#3b82f6',"nvA('pend')")+pzSt('Sedang diproses',O.filter(o=>o.st<2).length,'#f59e0b',"nvA('pend')")+pzSt('Siap diambil',O.filter(o=>o.st===2).length,'#10b981',"nvA('pend')")+pzSt('Belum lunas',rp(belum),belum?'#d64545':'#8b5cf6',"nvH()");
-  const jalan=own?[['⚙️','#2f7de1','Pengaturan','Toko, layanan, pembayaran, karyawan',"nvA('set')"],['📊','#1e9e5a','Laporan','Omzet, uang masuk, tutup kas',"nvA('lap')"],['📦','#d98a1f','Stok produk','Tambah atau kurangi stok',"nvA('stok')"],['🗂️','#5b6b82','Pusat Data','Pelanggan, pembayaran, log aktivitas',"nvA('dat')"]]
-   :[['🧺','#2f7de1','Order baru','Catat cucian pelanggan',"nvA('baru')"],['📋','#0e9aa7','Daftar order','Pantau dan ubah status cucian',"nvA('pend')"],['👥','#7c5cd6','Pelanggan','Cari dan lihat data pelanggan',"nvA('pel')"],['💸','#d64545','Hutang','Tagih dan catat pelunasan',"nvH()"]];
-  const row=(l,v)=>v?`<div class="pr"><span class="mut">${l}</span><span style="text-align:right;overflow-wrap:anywhere">${esc(v)}</span></div>`:'';
+  const st=own?pkStats([['Omzet hari ini',rp(hari.reduce((t,o)=>t+o.total,0)),'#1e9e5a',"nvA('lap')"],['Order hari ini',hari.length,'#3b82f6',"nvA('pend')"],['Uang masuk',rp(uangMasuk(d0,d0+864e5)),'#10b981',"nvA('lap')"]])
+   :pkStats([['Order saya',hari.filter(o=>o.pj===me()).length,'#3b82f6',"nvA('pend')"],['Diproses',O.filter(o=>o.st<2).length,'#f59e0b',"nvA('pend')"],['Siap diambil',O.filter(o=>o.st===2).length,'#10b981',"nvA('pend')"]]);
+  const hut=pkRow({ic:'💸',c:'#d64545',t:'Hutang',s:belum>0?'Belum lunas '+rp(belum):'Semua order sudah lunas',act:"nvH()"});
+  const jalan=own?[pkRow({ic:'⚙️',c:'#2f7de1',t:'Pengaturan',s:'Toko, layanan, pembayaran, karyawan',act:"nvA('set')"}),pkRow({ic:'📊',c:'#1e9e5a',t:'Laporan',s:'Omzet, uang masuk, tutup kas',act:"nvA('lap')"}),pkRow({ic:'📦',c:'#d98a1f',t:'Stok produk',s:'Tambah atau kurangi stok',act:"nvA('stok')"}),pkRow({ic:'🗂️',c:'#5b6b82',t:'Pusat Data',s:'Pelanggan, pembayaran, log aktivitas',act:"nvA('dat')"}),hut]
+   :[pkRow({ic:'🧺',c:'#2f7de1',t:'Order baru',s:'Catat cucian pelanggan',act:"nvA('baru')"}),pkRow({ic:'📋',c:'#0e9aa7',t:'Daftar order',s:'Pantau dan ubah status cucian',act:"nvA('pend')"}),pkRow({ic:'👥',c:'#7c5cd6',t:'Pelanggan',s:'Cari dan lihat data pelanggan',act:"nvA('pel')"}),hut];
+  const akses=['Order','Order baru','Pelanggan','Pembayaran','Hutang'].concat(own?['Laporan','Pengaturan','Pusat Data','Stok','Batalkan order']:[]);
+  const info=[pkRow({ic:'👤',c:'#2f7de1',t:'Nama',s:esc(nm),nochev:1}),...(em?[pkRow({ic:'✉️',c:'#7c5cd6',t:'Email',s:esc(em),nochev:1})]:[]),pkRow({ic:'🛡️',c:'#1e9e5a',t:'Peran',s:role+(own?' · akses penuh':' · akses kasir'),nochev:1}),pkRow({ic:'🏪',c:'#d98a1f',t:'Toko',s:esc(S.nama),nochev:1})];
   return `<div class="pg">
-  <div class="pz"><div class="pza">${esc(nm[0].toUpperCase())}</div><div class="pzi"><h1>${esc(nm)}</h1><p class="mut">${esc(em||S.nama)}</p><span class="pzb${own?' vip':''}">${own?'★ ':''}${role}</span></div></div>
-  <div class="card"><div class="pzh"><h2>Ringkasan hari ini</h2><span class="mut">${n.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span></div><div class="sg pzs" style="margin:8px 0 0">${st}</div></div>
-  <div class="card"><h2>Informasi akun</h2>${row('Nama',nm)}${row('Email',em)}${row('Peran',role)}${row('Toko',S.nama)}<p class="mut" style="margin:10px 0 0;font-size:12.5px">${own?'Akses penuh: laporan, pengaturan, pusat data, stok, serta membatalkan order.':'Akses kasir: order, pelanggan, pembayaran, dan hutang. Laporan dan pengaturan hanya untuk owner.'}</p></div>
-  <div class="card"><h2>Pintasan</h2>${jalan.map(x=>pzLink(x[0],x[1],x[2],x[3],x[4])).join('')}</div>
-  <div class="card"><h2>Tampilan</h2>${themeChips()}</div>
-  <button class="b g" style="width:100%;margin:4px 0 0;color:var(--bad);border-color:var(--bad)" onclick="askOut()">Keluar dari akun</button>
-  <p class="mut" style="text-align:center;margin:14px 0 0;font-size:12px">${esc(S.nama)} · v${esc((window.KL_CONFIG||{}).VERSI||'1.3.2')}</p></div>`}
+  <div class="pkh">${pkAv(esc(nm[0].toUpperCase()),pct)}<h1>${esc(nm)}</h1><p class="mut">${esc(em||S.nama)} · ${own?'★ ':''}${role}</p></div>
+  ${st}<p class="mut pkcap">${hari.length?`${done} dari ${hari.length} order hari ini sudah selesai`:'Belum ada order hari ini'}</p>
+  ${pkLbl('Akses Anda')}${pkChips(akses)}
+  ${pkLbl('Pintasan')}${pkGrp(jalan)}
+  ${pkLbl('Informasi akun')}${pkGrp(info)}
+  ${pkLbl('Tampilan')}${pkTema()}
+  ${pkLbl('Akun')}${pkLogout('askOut()','Akhiri sesi di perangkat ini')}
+  <p class="mut" style="text-align:center;margin:18px 0 0;font-size:12px">${esc(S.nama)} · v${esc((window.KL_CONFIG||{}).VERSI||'')}</p></div>`}
 function pavBtn(){const o=owner(),nm=(SB_NAMA||(SB_EM||'').split('@')[0]||(o?'Owner':'Kasir')).trim()||'K';return `<button class="pav" onclick="nvA('prof')" aria-label="Profil ${esc(nm)}">${esc(nm[0].toUpperCase())}</button>`}
 function dDash(){
   const n=new Date(),d0=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),O=S.orders.filter(o=>o.st!==4);
@@ -1222,27 +1225,44 @@ function tuHtml(){if(!tu)return '';const n=+tu.nom||0,p=tu.met==='QRIS'&&n>0&&ty
 function applyTh(){try{const x=localStorage.getItem('th');if(x==='light'||x==='dark')document.documentElement.setAttribute('data-theme',x);else document.documentElement.removeAttribute('data-theme')}catch(e){}}
 function setTh(x){try{x==='auto'?localStorage.removeItem('th'):localStorage.setItem('th',x)}catch(e){}applyTh();draw()}
 function themeChips(){let x='auto';try{x=localStorage.getItem('th')||'auto'}catch(e){}return `<div class="mt">${[['auto','Ikuti perangkat'],['light','Terang'],['dark','Gelap']].map(([k,l])=>`<button class="${x===k?'on':''}" onclick="setTh('${k}')">${l}</button>`).join('')}</div>`}
+const PK_CH='<svg class="pkc" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+function pkAv(ch,pct){return `<div class="pka" style="--p:${Math.max(0,Math.min(100,pct))}"><div class="pkai">${ch}</div></div>`}
+function pkLbl(t){return `<div class="pkl">${t}</div>`}
+function pkRow(o){const inner=`<span class="pki" style="--c:${o.c}">${o.ic}</span><span class="pkt"><b>${o.t}</b>${o.s?`<span class="sub">${o.s}</span>`:''}</span>${o.v?`<span class="pkv">${o.v}</span>`:''}${o.sw!==undefined?`<span class="pks${o.sw?' on':''}"><i></i></span>`:(o.nochev?'':PK_CH)}`,cl='pkr'+(o.bad?' bad':'');
+  if(o.href)return `<a class="${cl}" target="_blank" rel="noopener" href="${esc(o.href)}">${inner}</a>`;
+  if(o.sw!==undefined)return `<button class="${cl}" role="switch" aria-checked="${o.sw?'true':'false'}" onclick="${o.act}">${inner}</button>`;
+  if(o.act)return `<button class="${cl}" onclick="${o.act}">${inner}</button>`;
+  return `<div class="${cl}">${inner}</div>`}
+function pkGrp(a){return `<div class="pkg">${a.join('')}</div>`}
+function pkChips(a){return `<div class="pkg pkch">${a.map(x=>`<span>${x}</span>`).join('')}</div>`}
+function pkStats(a){return `<div class="pkst">${a.map(x=>`<div${x[3]?` class="pkk" onclick="${x[3]}"`:''}${x[2]?` style="--c:${x[2]}"`:''}><b>${x[1]}</b><small>${x[0]}</small></div>`).join('')}</div>`}
+function thAuto(){try{return !localStorage.getItem('th')}catch(e){return true}}
+function pkTema(){const d=isDark();return pkGrp([pkRow({ic:d?'🌙':'☀️',c:'#7c5cd6',t:'Mode gelap',s:d?'Ketuk untuk mode terang':'Ketuk untuk mode gelap',sw:d,act:"setTh(isDark()?'light':'dark')"}),pkRow({ic:'📱',c:'#2f7de1',t:'Ikuti perangkat',s:thAuto()?'Mengikuti pengaturan perangkat':'Diatur manual',sw:thAuto(),act:"setTh(thAuto()?(isDark()?'dark':'light'):'auto')"})])}
+function pkLogout(fn,sub){return pkGrp([pkRow({ic:'🚪',c:'#d64545',t:'Keluar',s:sub,act:fn,bad:1,nochev:1})])}
 let akunAll=false;
-const PZ_CH='<svg class="pzc" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
-function pzBuka(id){cscr='lacak';found=S.orders.find(z=>z.id===id)||null;draw();try{window.scrollTo(0,0)}catch(e){}}
-function pzOrd(x){return `<button class="pzr" onclick="pzBuka(${x.id})"><span class="pzm"><span class="pzt"><b>${nn(x)}</b><span class="chip s${x.st}">${STN[x.st]}</span></span><span class="mut">${fmt(x.masuk)} · ${esc(itemsTxt(x))}</span></span><span class="pzv"><b>${rp(x.total)}</b></span>${PZ_CH}</button>`}
-function pzLink(ic,c,t,sub,act){const tag=/^https?:/.test(act)?`a target="_blank" rel="noopener" href="${esc(act)}"`:`button onclick="${act}"`,end=/^https?:/.test(act)?'a':'button';return `<${tag} class="pzr"><span class="pzic" style="--c:${c}">${ic}</span><span class="pzm"><b>${t}</b><span class="mut">${sub}</span></span>${PZ_CH}</${end}>`}
+function pkBuka(id){cscr='lacak';found=S.orders.find(z=>z.id===id)||null;draw();try{window.scrollTo(0,0)}catch(e){}}
+function pkOrd(x){const ic=['🧺','🫧','✅','📦','✖️'][x.st]||'🧺',c=['#2f7de1','#d99a00','#1e9e5a','#5b6b82','#d64545'][x.st]||'#2f7de1';
+  return `<button class="pkr" onclick="pkBuka(${x.id})"><span class="pki" style="--c:${c}">${ic}</span><span class="pkt"><b>${nn(x)} <span class="chip s${x.st}">${STN[x.st]}</span></b><span class="sub">${fmt(x.masuk)} · ${esc(itemsTxt(x))}</span></span><span class="pkv">${rp(x.total)}</span>${PK_CH}</button>`}
 function akunKeluar(){ask('Keluar dari akun ini? Anda bisa masuk lagi kapan saja dengan nomor WhatsApp dan kata sandi.',logoutAcc,'Keluar')}
 function dAkun(){const a=curAcc();
-  if(!a)return `<div class="pg">${ban()}<div class="pz pzg"><div class="pza">${svg('usr')}</div><div class="pzi"><h1>Akun Saya</h1><p class="mut">Masuk untuk melihat riwayat cucian, poin, dan saldo tanpa mengetik nomor nota.</p></div></div><div class="card"><button class="b" style="width:100%;margin:0" onclick="go('pin')">Masuk</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="go('reg')">Daftar akun baru</button><p class="mut" style="text-align:center;margin:12px 0 0;font-size:12.5px">Admin dan karyawan masuk lewat tautan "Masuk sebagai admin / karyawan" di halaman masuk.</p></div><div class="card"><h2>Tampilan</h2>${themeChips()}</div></div>`;
+  if(!a)return `<div class="pg">${ban()}<div class="pkh"><div class="pka" style="--p:0"><div class="pkai">${svg('usr')}</div></div><h1>Akun Saya</h1><p class="mut">Masuk untuk melihat riwayat cucian, poin, dan saldo tanpa mengetik nomor nota.</p></div>
+  <div class="pkg" style="padding:14px"><button class="b" style="width:100%;margin:0" onclick="go('pin')">Masuk</button><button class="b g" style="width:100%;margin:8px 0 0" onclick="go('reg')">Daftar akun baru</button><p class="mut" style="text-align:center;margin:12px 0 0;font-size:12.5px">Admin dan karyawan masuk lewat tautan "Masuk sebagai admin / karyawan" di halaman masuk.</p></div>${pkLbl('Tampilan')}${pkTema()}</div>`;
   const mine=S.orders.filter(o=>nw(o.wa)===a.w).sort((x,y)=>y.masuk-x.masuk),w0=mine[0]&&mine[0].wa,sl=w0?((S.sal&&S.sal[nw(w0)])||0):0,pt=w0?Math.max(0,poin(w0)):0;
   const tot=mine.filter(o=>o.st!==4).length,aktif=mine.filter(o=>o.st<3),riw=mine.filter(o=>o.st>=3),tier=tot>=10?'VIP':tot>=3?'Langganan':'Member';
   const sisaP=Math.max(0,50-pt),pct=Math.min(100,Math.round(pt/50*100)),shown=akunAll?riw:riw.slice(0,5),csu=csUrl();
-  const nama=String(a.n||'Pelanggan').trim()||'Pelanggan';
+  const nama=String(a.n||'Pelanggan').trim()||'Pelanggan',cnt={};
+  mine.filter(o=>o.st!==4).forEach(o=>items(o).forEach(x=>{const v=SV[x.sv];if(v)cnt[v.n]=(cnt[v.n]||0)+1}));
+  const fav=Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([n,c])=>esc(n)+' · '+c+'x');
   return `<div class="pg">${ban()}
-  <div class="pz"><div class="pza">${esc(nama[0].toUpperCase())}</div><div class="pzi"><h1>${esc(nama)}</h1><p class="mut">${esc(a.tw||a.w)}</p><span class="pzb${tier==='VIP'?' vip':''}">${tier==='VIP'?'★ ':''}${tier}</span></div></div>
-  <div class="sg pzs"><div class="st2" style="--c:#f59e0b"><small>Poin</small><b>${pt}</b></div><div class="st2" style="--c:#10b981"><small>Saldo</small><b>${rp(sl)}</b></div><div class="st2" style="--c:#3b82f6"><small>Cucian aktif</small><b>${aktif.length}</b></div><div class="st2" style="--c:#8b5cf6"><small>Total cucian</small><b>${tot}</b></div></div>
-  <div class="card"><div class="pzh"><h2>Poin member</h2><b>${pt}<span class="mut" style="font-weight:500"> / 50</span></b></div><div class="pzbar"><i style="width:${pct}%"></i></div><p class="mut" style="margin:8px 0 0;font-size:13px">${sisaP?`${sisaP} poin lagi untuk diskon Rp25.000. Tiap Rp10.000 belanja = 1 poin.`:'Poin sudah cukup untuk diskon Rp25.000. Sampaikan ke kasir saat membayar.'}</p></div>
-  ${aktif.length?`<div class="card"><div class="pzh"><h2>Sedang berjalan</h2><span class="mut">${aktif.length} cucian</span></div>${aktif.map(pzOrd).join('')}</div>`:''}
-  <div class="card"><div class="pzh"><h2>Riwayat cucian</h2>${riw.length?`<span class="mut">${riw.length} cucian</span>`:''}</div>${shown.length?shown.map(pzOrd).join(''):`<p class="mut" style="margin:6px 0 0">${aktif.length?'Belum ada cucian yang selesai diambil.':'Belum ada cucian pada akun ini.'}</p>`}${riw.length>5?`<button class="b g" style="width:100%;margin:10px 0 0" onclick="akunAll=!akunAll;draw()">${akunAll?'Tampilkan lebih sedikit':'Tampilkan semua ('+riw.length+')'}</button>`:''}</div>
-  <div class="card"><h2>Bantuan</h2>${csu?pzLink('💬','#1e9e5a','Hubungi kami','Tanya cucian atau layanan lewat WhatsApp',csu):''}${pzLink('⭐','#d99a00','Beri ulasan','Ceritakan pengalaman Anda',"nv('tes')")}${pzLink('🏷️','#2f7de1','Daftar harga','Lihat layanan dan estimasi biaya',"nv('harga')")}</div>
-  <div class="card"><h2>Tampilan</h2>${themeChips()}</div>
-  <button class="b g" style="width:100%;margin:4px 0 0;color:var(--bad);border-color:var(--bad)" onclick="akunKeluar()">Keluar dari akun</button></div>`}
+  <div class="pkh">${pkAv(esc(nama[0].toUpperCase()),pct)}<h1>${esc(nama)}</h1><p class="mut">${esc(a.tw||a.w)} · ${tier==='VIP'?'★ ':''}${tier}</p></div>
+  ${pkStats([['Poin',pt,'#f59e0b'],['Saldo',rp(sl),'#10b981'],['Total cucian',tot,'#3b82f6']])}
+  ${pkLbl('Poin member')}<div class="pkg" style="padding:14px"><div class="row"><b>${pt} <span class="mut" style="font-weight:500">dari 50 poin</span></b><span class="mut">${pct}%</span></div><div class="pzbar"><i style="width:${pct}%"></i></div><p class="mut" style="margin:8px 0 0;font-size:13px">${sisaP?`${sisaP} poin lagi untuk diskon Rp25.000. Tiap Rp10.000 belanja = 1 poin.`:'Poin sudah cukup untuk diskon Rp25.000. Sampaikan ke kasir saat membayar.'}</p></div>
+  ${aktif.length?pkLbl('Sedang berjalan · '+aktif.length)+pkGrp(aktif.map(pkOrd)):''}
+  ${pkLbl('Riwayat cucian'+(riw.length?' · '+riw.length:''))}${shown.length?pkGrp(shown.map(pkOrd)):`<div class="pkg" style="padding:14px"><span class="mut">${aktif.length?'Belum ada cucian yang selesai diambil.':'Belum ada cucian pada akun ini.'}</span></div>`}${riw.length>5?`<button class="b g" style="width:100%;margin:10px 0 0" onclick="akunAll=!akunAll;draw()">${akunAll?'Tampilkan lebih sedikit':'Tampilkan semua ('+riw.length+')'}</button>`:''}
+  ${fav.length?pkLbl('Layanan yang sering dipakai')+pkChips(fav):''}
+  ${pkLbl('Bantuan')}${pkGrp([...(csu?[pkRow({ic:'💬',c:'#1e9e5a',t:'Hubungi kami',s:'Tanya cucian atau layanan lewat WhatsApp',href:csu})]:[]),pkRow({ic:'⭐',c:'#d99a00',t:'Beri ulasan',s:'Ceritakan pengalaman Anda',act:"nv('tes')"}),pkRow({ic:'🏷️',c:'#2f7de1',t:'Daftar harga',s:'Layanan dan estimasi biaya',act:"nv('harga')"})])}
+  ${pkLbl('Tampilan')}${pkTema()}
+  ${pkLbl('Akun')}${pkLogout('akunKeluar()','Akhiri sesi di perangkat ini')}</div>`}
 function tesSec(){const a=tesUm(),avg=a.length?a.reduce((s,x)=>s+x.b,0)/a.length:0;
   return `<h2 style="margin:22px 0 8px">Kata Pelanggan</h2>${a.length?`<p class="mut" style="margin:0 0 10px"><b style="color:var(--tx);font-size:18px">${avg.toFixed(1)}</b> <span style="color:#f5b301">★</span> dari ${a.length} ulasan</p><div class="ts">${a.map(x=>`<div class="tc"><div class="row" style="justify-content:flex-start;gap:10px"><div class="av">${esc(String(x.n||'?')[0].toUpperCase())}</div><div><b>${esc(x.n)}</b><div style="color:#f5b301">${'★'.repeat(x.b)}<span style="color:var(--bd)">${'★'.repeat(5-x.b)}</span></div></div></div><p style="margin:10px 0 0">${esc(x.t)}</p></div>`).join('')}</div>`:'<p class="mut" style="margin:0 0 10px">Belum ada testimoni. Jadilah yang pertama!</p>'}<button class="b g" style="margin:12px 0 0" onclick="nv('tes')">Tulis testimoni</button>`}
 function dTes(){const a=curAcc();return `<div class="pg">${ban()}<h1>Tulis Testimoni</h1><p class="mut">Ceritakan pengalaman Anda. Testimoni tampil setelah disetujui admin.</p><div class="card" id="tsc"><label>Nama</label><input id="tn2" value="${esc(a?a.n:'')}"><label>Penilaian</label><div class="stars" id="tst">${[1,2,3,4,5].map(n=>`<a onclick="tsS(${n})" style="${n<=tsr?'':'opacity:.35'}">★</a>`).join('')}</div><label>Komentar</label><textarea id="tt2" placeholder="Tulis komentar Anda"></textarea><button class="b" style="width:100%;margin:14px 0 0" onclick="tesGen()">Kirim Testimoni</button></div><button class="b g" onclick="nv('home')">← Kembali</button></div>`}
