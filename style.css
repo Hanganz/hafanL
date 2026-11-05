@@ -562,9 +562,9 @@ details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 .pkg{background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:4px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 22px rgba(15,23,42,.04)}
 .pkch{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px}
 .pkch span{padding:8px 14px;border-radius:999px;border:1px solid var(--bd);background:color-mix(in srgb,var(--pri) 5%,var(--card));font-size:13.5px;font-weight:500}
-.pkr{display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:14px 0;border:0;border-radius:0;background:transparent;color:var(--tx);font:inherit;text-align:left;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.pkr+.pkr{border-top:1px solid var(--bd)}
-div.pkr{cursor:default}.pkr:active:not(div){opacity:.65}
+.pkw{display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:14px 0;border:0;border-radius:0;background:transparent;color:var(--tx);font:inherit;text-align:left;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pkw+.pkw{border-top:1px solid var(--bd)}
+div.pkw{cursor:default}.pkw:active:not(div){opacity:.65}
 .pki{flex:none;width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;background:color-mix(in srgb,var(--c,var(--pri)) 14%,var(--card));border:1px solid color-mix(in srgb,var(--c,var(--pri)) 22%,var(--bd))}
 .pkt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .pkt b{font-size:15.5px;font-weight:650;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -574,10 +574,39 @@ div.pkr{cursor:default}.pkr:active:not(div){opacity:.65}
 .pks{flex:none;position:relative;width:54px;height:32px;border-radius:99px;background:color-mix(in srgb,var(--mut) 30%,var(--bd));transition:background .2s}
 .pks i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;transition:left .2s;font-style:normal;font-size:14px;font-weight:800;color:var(--pri)}
 .pks.on{background:var(--pri)}.pks.on i{left:25px}.pks.on i::after{content:"✓"}
-.pkr.bad .pkt b{color:var(--bad)}
+.pkw.bad .pkt b{color:var(--bad)}
 .pzbar{height:8px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:10px}.pzbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#fbbf24);transition:width .4s}
 .pav{flex:none;width:36px;height:36px;margin:0;padding:0;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--pri);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px color-mix(in srgb,var(--pri) 28%,transparent)}
 .pav:active{transform:scale(.94)}
 .ah .pav{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);box-shadow:none}
 @media(min-width:700px){.pkh h1{font-size:30px}.pka{width:124px;height:124px}.pkai{font-size:48px}}
 @media(max-height:500px){.pka{width:76px;height:76px}.pkai{font-size:30px}.pkh{padding-bottom:10px}}
+
+/* ===== v1.3.4: set ikon pastel ===== */
+.ikt{--s:56px;--w:rgba(255,255,255,.8);flex:none;display:inline-flex;align-items:center;justify-content:center;width:var(--s);height:var(--s);border-radius:30%;background:linear-gradient(155deg,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),var(--bg);border:1.5px solid var(--bd);box-shadow:0 5px 12px color-mix(in srgb,var(--d) 12%,transparent);vertical-align:middle}
+.ikt .ik{width:68%;height:68%;display:block;stroke:none;fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.gic.ikw,.gic.atg.ikw{width:auto;height:auto;background:none;border:0;box-shadow:none;border-radius:0;font-size:0}
+.ac summary .ai.ikw{background:none;width:auto;height:auto;border-radius:0;margin-right:12px}
+.svi .ikt,.kth .ikt{vertical-align:middle}
+.ik-blue{--d:#0f5aa8;--m:#4b9be0;--bg:#d6e6fb;--bd:#b4cdf4}
+.ik-green{--d:#0a8a55;--m:#34b57c;--bg:#d3f6e3;--bd:#9fe0bf}
+.ik-orange{--d:#b2571a;--m:#f59a23;--bg:#ffe5cf;--bd:#f5c9a0}
+.ik-cyan{--d:#0f6a9a;--m:#2f9fd0;--bg:#d3f3fb;--bd:#a5e0f0}
+.ik-purple{--d:#6a3bb0;--m:#a066dc;--bg:#e8dcfb;--bd:#cfb8f2}
+.ik-pink{--d:#d63a66;--m:#f2799a;--bg:#fde0ea;--bd:#f6b8cc}
+.ik-yellow{--d:#d98a00;--m:#fdc93b;--bg:#fff0bf;--bd:#f8dc82}
+.ik-slate{--d:#3d5a8a;--m:#7b93bd;--bg:#e5e9f4;--bd:#c6cfe3}
+.ik-red{--d:#c93636;--m:#ef6b6b;--bg:#fde1e1;--bd:#f5b5b5}
+.ik-teal{--d:#0b7f80;--m:#2cbcb6;--bg:#d2f4f2;--bd:#9fe0dc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ikt{--w:rgba(255,255,255,.1);background:linear-gradient(155deg,rgba(255,255,255,.07),rgba(255,255,255,0) 60%),var(--bg);box-shadow:none}:root:not([data-theme="light"]) .ik-blue{--d:#8cc2fa;--bg:#1b2d46;--bd:#2b4668}:root:not([data-theme="light"]) .ik-green{--d:#6fdca6;--bg:#16352a;--bd:#25523f}:root:not([data-theme="light"]) .ik-orange{--d:#ffb877;--bg:#3d2a18;--bd:#5e4129}:root:not([data-theme="light"]) .ik-cyan{--d:#7fd3f2;--bg:#143543;--bd:#1f5368}:root:not([data-theme="light"]) .ik-purple{--d:#c4a3f5;--bg:#2b2146;--bd:#42336a}:root:not([data-theme="light"]) .ik-pink{--d:#ff9bb8;--bg:#40202e;--bd:#613048}:root:not([data-theme="light"]) .ik-yellow{--d:#ffd75e;--bg:#3b3214;--bd:#5a4c1d}:root:not([data-theme="light"]) .ik-slate{--d:#a9bde2;--bg:#222b3c;--bd:#34415a}:root:not([data-theme="light"]) .ik-red{--d:#ff9a9a;--bg:#411f22;--bd:#653035}:root:not([data-theme="light"]) .ik-teal{--d:#6fe0da;--bg:#12383a;--bd:#1f5a5b}}
+:root[data-theme="dark"] .ikt{--w:rgba(255,255,255,.1);background:linear-gradient(155deg,rgba(255,255,255,.07),rgba(255,255,255,0) 60%),var(--bg);box-shadow:none}
+:root[data-theme="dark"] .ik-blue{--d:#8cc2fa;--bg:#1b2d46;--bd:#2b4668}
+:root[data-theme="dark"] .ik-green{--d:#6fdca6;--bg:#16352a;--bd:#25523f}
+:root[data-theme="dark"] .ik-orange{--d:#ffb877;--bg:#3d2a18;--bd:#5e4129}
+:root[data-theme="dark"] .ik-cyan{--d:#7fd3f2;--bg:#143543;--bd:#1f5368}
+:root[data-theme="dark"] .ik-purple{--d:#c4a3f5;--bg:#2b2146;--bd:#42336a}
+:root[data-theme="dark"] .ik-pink{--d:#ff9bb8;--bg:#40202e;--bd:#613048}
+:root[data-theme="dark"] .ik-yellow{--d:#ffd75e;--bg:#3b3214;--bd:#5a4c1d}
+:root[data-theme="dark"] .ik-slate{--d:#a9bde2;--bg:#222b3c;--bd:#34415a}
+:root[data-theme="dark"] .ik-red{--d:#ff9a9a;--bg:#411f22;--bd:#653035}
+:root[data-theme="dark"] .ik-teal{--d:#6fe0da;--bg:#12383a;--bd:#1f5a5b}
