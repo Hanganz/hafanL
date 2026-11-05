@@ -545,28 +545,39 @@ details.ac{overflow:hidden}details.ac>summary{transition:background .15s}
 /* ===== v1.3.0: pembayaran QRIS berbatas waktu ===== */
 .psb.ok{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
 
-/* ===== v1.3.2: profil (pelanggan, kasir, owner) ===== */
-.pz{display:flex;align-items:center;gap:16px;padding:18px;margin:4px 0 14px;border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--pri) 15%,var(--card)),var(--card) 80%);border:1px solid color-mix(in srgb,var(--pri) 22%,var(--bd))}
-.pza{flex:none;width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pri),color-mix(in srgb,var(--pri) 55%,#7ad0c8));box-shadow:0 4px 14px color-mix(in srgb,var(--pri) 30%,transparent)}
-.pza svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.pzi{min-width:0}.pzi h1{margin:0;font-size:21px;line-height:1.2;overflow-wrap:anywhere}.pzi .mut{margin:3px 0 0;font-size:13.5px;overflow-wrap:anywhere}
-.pzg .pzi h1{font-size:19px}
-.pzb{display:inline-flex;align-items:center;margin-top:9px;padding:3px 11px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.2px;background:color-mix(in srgb,var(--pri) 14%,transparent);color:var(--pri)}
-.pzb.vip{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
-.pzs{margin:0 0 14px}.pzs .st2{cursor:default}.pzs .st2[onclick]{cursor:pointer}
-.pzs .st2 b{font-size:20px;word-break:break-word}
-.pzh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 6px}.pzh h2{margin:0}
-.pzbar{height:8px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:6px}.pzbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#fbbf24);transition:width .4s}
-.pzr{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 0;border:0;border-top:1px solid var(--bd);border-radius:0;background:transparent;color:var(--tx);font:inherit;text-align:left;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.pzh+.pzr,h2+.pzr{border-top:0}
-.pzr:active{opacity:.65}
-.pzm{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.pzm b{font-size:15px}.pzm .mut{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pzt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pzt b{font-size:14.5px}
-.pzv{flex:none;font-size:14px}
-.pzc{flex:none;width:18px;height:18px;stroke:var(--mut);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.pzic{flex:none;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:color-mix(in srgb,var(--c,var(--pri)) 14%,var(--card));border:1px solid color-mix(in srgb,var(--c,var(--pri)) 24%,var(--bd))}
+/* ===== v1.3.3: profil gaya baru (pelanggan, kasir, owner) ===== */
+.pkh{text-align:center;padding:6px 0 18px}
+.pkh h1{margin:14px 0 0;font-size:27px;line-height:1.2;font-weight:800;letter-spacing:-.3px;overflow-wrap:anywhere}
+.pkh .mut{margin:5px 0 0;font-size:14.5px;overflow-wrap:anywhere}
+.pka{width:108px;height:108px;margin:0 auto;border-radius:50%;padding:5px;box-sizing:border-box;display:flex;background:conic-gradient(from 0deg,var(--pri) calc(var(--p)*1%),color-mix(in srgb,var(--pri) 14%,var(--bd)) 0)}
+.pkai{flex:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:700;color:var(--pri);background:color-mix(in srgb,var(--pri) 12%,var(--card));border:5px solid var(--card)}
+.pkai svg{width:44px;height:44px;stroke:var(--pri);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pkst{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:18px 4px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 22px rgba(15,23,42,.04)}
+.pkst>div{text-align:center;padding:0 6px;min-width:0;border-left:1px solid var(--bd)}.pkst>div:first-child{border-left:0}
+.pkst b{display:block;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkst small{display:block;margin-top:3px;font-size:12.5px;color:var(--mut)}
+.pkk{cursor:pointer}.pkk:active{opacity:.6}
+.pkcap{text-align:center;margin:10px 0 0;font-size:13px}
+.pkl{margin:24px 6px 9px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.pkg{background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:4px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 22px rgba(15,23,42,.04)}
+.pkch{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px}
+.pkch span{padding:8px 14px;border-radius:999px;border:1px solid var(--bd);background:color-mix(in srgb,var(--pri) 5%,var(--card));font-size:13.5px;font-weight:500}
+.pkr{display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:14px 0;border:0;border-radius:0;background:transparent;color:var(--tx);font:inherit;text-align:left;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pkr+.pkr{border-top:1px solid var(--bd)}
+div.pkr{cursor:default}.pkr:active:not(div){opacity:.65}
+.pki{flex:none;width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;background:color-mix(in srgb,var(--c,var(--pri)) 14%,var(--card));border:1px solid color-mix(in srgb,var(--c,var(--pri)) 22%,var(--bd))}
+.pkt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.pkt b{font-size:15.5px;font-weight:650;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pkt .sub{font-size:13px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pkv{flex:none;font-size:14px;font-weight:700}
+.pkc{flex:none;width:18px;height:18px;stroke:var(--mut);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pks{flex:none;position:relative;width:54px;height:32px;border-radius:99px;background:color-mix(in srgb,var(--mut) 30%,var(--bd));transition:background .2s}
+.pks i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;transition:left .2s;font-style:normal;font-size:14px;font-weight:800;color:var(--pri)}
+.pks.on{background:var(--pri)}.pks.on i{left:25px}.pks.on i::after{content:"✓"}
+.pkr.bad .pkt b{color:var(--bad)}
+.pzbar{height:8px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:10px}.pzbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#fbbf24);transition:width .4s}
 .pav{flex:none;width:36px;height:36px;margin:0;padding:0;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--pri);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px color-mix(in srgb,var(--pri) 28%,transparent)}
 .pav:active{transform:scale(.94)}
 .ah .pav{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);box-shadow:none}
-@media(min-width:700px){.pz{padding:22px}.pza{width:78px;height:78px;font-size:32px}.pzi h1{font-size:24px}}
-@media(max-height:500px){.pz{padding:12px}.pza{width:52px;height:52px;font-size:22px}}
+@media(min-width:700px){.pkh h1{font-size:30px}.pka{width:124px;height:124px}.pkai{font-size:48px}}
+@media(max-height:500px){.pka{width:76px;height:76px}.pkai{font-size:30px}.pkh{padding-bottom:10px}}
