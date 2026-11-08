@@ -126,7 +126,7 @@ function sbProyeksi(){
     ctx[k]={k,orders:os.map(o=>pubO(o,k,0)),sal:(S.sal&&S.sal[n])||0,tebus:(S.tebus&&S.tebus[n])||0,vc:(S.vc&&S.vc[n])||0,pt:poin(wa),
       tu:(S.tu||[]).filter(x=>nw(x.k)===n).slice(-30).map(x=>({t:x.t,a:x.a,k}))};return k};
   S.orders.forEach(o=>{if(!(o.st<3||now-o.masuk<W))return;const k=mkCtx(o.wa);
-    lac.push({kode:tkc(o),nota:o.no||null,idn:String(o.id),wa4:dig(o.wa).slice(-4),k,o:pubO(o,k,0),lim:pubO(o,k,1)})});
+    lac.push({kode:tkc(o),nota:o.no||null,idn:String(o.id),wa4:dig(o.wa).slice(-4),wa:dig(o.wa),k,o:pubO(o,k,0),lim:pubO(o,k,1)})});
   const akun=(S.acc||[]).map(a=>({wa:a.w,s:a.s,h:a.h,n:a.n,tw:'******'+String(a.w).slice(-4),k:mkCtx(a.w)}));
   const c=Object.keys(ctx).map(k=>ctx[k]),js=JSON.stringify([lac,c,akun]);
   return {lac,c,akun,ph:h32(js)+'.'+h32(js.length+js.slice(-400))+'.'+js.length}}
