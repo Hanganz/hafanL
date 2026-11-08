@@ -1250,7 +1250,7 @@ function payGo(){const o=S.orders.find(x=>x.id===pid);if(!o)return;let rem=tagih
 function mmss(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function payQrBaru(){pm.ku=0;pm.qt=0;pm.exp=0;pm.qpi=null;pm.qpErr='';payRedraw()}
 function qpBuat(o,n0){if(pm.qpBusy)return;pm.qpBusy=1;pm.qpErr='';const my=pm,ref='N-'+o.id+'-'+Date.now().toString(36);
-  qpKasir(ref,n0,'Nota '+nn(o)+' '+(o.nama||''),o.wa).then(r=>{if(pm!==my)return;my.qpBusy=0;my.qpi={n0,tb:r.tb,ku:r.ku,qris:r.qris,ref};my.ku=r.ku;my.qt=Date.now()+r.sisa*1000;my.exp=0;payRedraw()}).catch(e=>{if(pm!==my)return;my.qpBusy=0;my.qpErr=(e&&e.pesan)||'Gagal membuat QR';payRedraw()})}
+  qpKasir(ref,n0,'Nota '+nn(o)+(o.nama?' a.n. '+o.nama:''),o.wa).then(r=>{if(pm!==my)return;my.qpBusy=0;my.qpi={n0,tb:r.tb,ku:r.ku,qris:r.qris,ref};my.ku=r.ku;my.qt=Date.now()+r.sisa*1000;my.exp=0;payRedraw()}).catch(e=>{if(pm!==my)return;my.qpBusy=0;my.qpErr=(e&&e.pesan)||'Gagal membuat QR';payRedraw()})}
 function payQr(o){const qk=qpS(),n0=Math.min(+pm.nom||0,payRem(o)),hd='<div class="ov hi"><div class="md">';
   if(pm.done)return hd+'<div class="okc">✓</div><h2 style="margin:12px 0 4px">Pembayaran diterima</h2><p class="mut" style="margin:0">'+rp(pm.doneA||n0)+' · Nota '+nn(o)+'</p></div></div>';
   if(qk){
