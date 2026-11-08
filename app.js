@@ -512,9 +512,9 @@ function byrClose(){const e=document.getElementById('byS');if(e)e.remove();byS=n
 async function byrOpen(kode,tot){byrClose();byS={kode,tot,d:null,busy:1,at:0};$('#app').insertAdjacentHTML('beforeend',`<div class="ov hi mr" id="byS" onclick="if(event.target===this)byrClose()"><div class="bs" style="max-height:92vh;overflow:auto"><div class="grip"></div><div id="byB"></div></div></div>`);byrDraw();await byrMulai()}
 async function qpInvoice(kode){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),25000);try{const h={'Content-Type':'application/json',apikey:SB_KEY};if(SB_KEY.indexOf('eyJ')===0)h.Authorization='Bearer '+SB_KEY;const r=await fetch(SB_URL+'/functions/v1/qiospay-invoice',{method:'POST',signal:ctl.signal,headers:h,body:JSON.stringify({kode})});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||('HTTP '+r.status));e.status=r.status;e.pesan=j.error||'';throw e}return j}finally{clearTimeout(t)}}
 const qpS=()=>S.mutProv===MUT_QP;
-async function qpKasir(ref,amount,ket){const t=await sbToken();if(!t){const e=new Error('SESI_HABIS');e.pesan='Sesi habis. Masuk ulang lalu coba lagi.';throw e}
+async function qpKasir(ref,amount,ket,wa){const t=await sbToken();if(!t){const e=new Error('SESI_HABIS');e.pesan='Sesi habis. Masuk ulang lalu coba lagi.';throw e}
   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),25000);
-  try{const r=await fetch(SB_URL+'/functions/v1/qiospay-kasir',{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+t},body:JSON.stringify({ref,amount,ket})});
+  try{const r=await fetch(SB_URL+'/functions/v1/qiospay-kasir',{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+t},body:JSON.stringify({ref,amount,ket,wa:wa||''})});
     const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||('HTTP '+r.status));e.pesan=r.status===404?'Fungsi qiospay-kasir belum dipasang di Supabase.':(j.error||'Gagal membuat QR. Coba lagi.');throw e}return j}
   catch(e){if(!e.pesan)e.pesan=e&&e.name==='AbortError'?'QiosPay lambat merespons. Coba lagi.':'Tidak bisa menjangkau server. Periksa koneksi.';throw e}finally{clearTimeout(tm)}}
 async function byrMulai(){if(!byS)return;byS.busy=1;byS.err='';byrDraw();try{let d=null;byS.qris='';
@@ -1250,7 +1250,7 @@ function payGo(){const o=S.orders.find(x=>x.id===pid);if(!o)return;let rem=tagih
 function mmss(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function payQrBaru(){pm.ku=0;pm.qt=0;pm.exp=0;pm.qpi=null;pm.qpErr='';payRedraw()}
 function qpBuat(o,n0){if(pm.qpBusy)return;pm.qpBusy=1;pm.qpErr='';const my=pm,ref='N-'+o.id+'-'+Date.now().toString(36);
-  qpKasir(ref,n0,'Nota '+nn(o)+' '+(o.nama||'')).then(r=>{if(pm!==my)return;my.qpBusy=0;my.qpi={n0,tb:r.tb,ku:r.ku,qris:r.qris,ref};my.ku=r.ku;my.qt=Date.now()+r.sisa*1000;my.exp=0;payRedraw()}).catch(e=>{if(pm!==my)return;my.qpBusy=0;my.qpErr=(e&&e.pesan)||'Gagal membuat QR';payRedraw()})}
+  qpKasir(ref,n0,'Nota '+nn(o)+' '+(o.nama||''),o.wa).then(r=>{if(pm!==my)return;my.qpBusy=0;my.qpi={n0,tb:r.tb,ku:r.ku,qris:r.qris,ref};my.ku=r.ku;my.qt=Date.now()+r.sisa*1000;my.exp=0;payRedraw()}).catch(e=>{if(pm!==my)return;my.qpBusy=0;my.qpErr=(e&&e.pesan)||'Gagal membuat QR';payRedraw()})}
 function payQr(o){const qk=qpS(),n0=Math.min(+pm.nom||0,payRem(o)),hd='<div class="ov hi"><div class="md">';
   if(pm.done)return hd+'<div class="okc">✓</div><h2 style="margin:12px 0 4px">Pembayaran diterima</h2><p class="mut" style="margin:0">'+rp(pm.doneA||n0)+' · Nota '+nn(o)+'</p></div></div>';
   if(qk){
